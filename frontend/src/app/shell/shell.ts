@@ -1,20 +1,22 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Session } from '../core/session';
+import { Logo } from '../shared/logo';
 
 /**
- * App shell: a near-black header with the product name (plain text, not Chubb's wordmark), the
+ * App shell: a near-black header with the Lantern mark and name (our product name, not Chubb's wordmark), the
  * navigation for the current role, and the dev user switcher.
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Logo],
   template: `
     <header class="bar">
       <div class="inner">
         <a class="product" [routerLink]="session.home()">
-          <span class="name">Claims</span>
-          <span class="region">Asia Pacific</span>
+          <app-logo [size]="26" />
+          <span class="name">Lantern</span>
+          <span class="region">Claims · Asia Pacific</span>
         </a>
 
         <nav aria-label="Main">
@@ -45,9 +47,9 @@ import { Session } from '../core/session';
   styles: `
     .bar { background: var(--ink); color: #fff; }
     .inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; height: 3.5rem; display: flex; align-items: center; gap: 2rem; }
-    .product { display: flex; align-items: baseline; gap: 0.625rem; color: #fff; text-decoration: none; white-space: nowrap; }
+    .product { display: flex; align-items: center; gap: 0.5rem; color: #fff; text-decoration: none; white-space: nowrap; }
     .name { font-weight: 600; font-size: var(--step-1); letter-spacing: -0.01em; }
-    .region { font-size: var(--step--1); color: #aab1bc; }
+    .region { font-size: var(--step--1); color: #aab1bc; margin-left: 0.25rem; padding-left: 0.625rem; border-left: 1px solid #3a404b; }
     nav { display: flex; gap: 0.25rem; flex: 1; overflow-x: auto; }
     nav a {
       color: #c9ced6; text-decoration: none; padding: 0 0.75rem; height: 3.5rem; display: inline-flex; align-items: center;

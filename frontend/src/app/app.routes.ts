@@ -15,7 +15,7 @@ const requireRole = (...roles: Role[]): CanActivateFn => () => {
 };
 
 export const routes: Routes = [
-  { path: '', component: Welcome, title: 'Claims · Asia Pacific' },
+  { path: '', component: Welcome, title: 'Lantern · Claims Asia Pacific' },
 
   // Claimant
   { path: 'my-claims', canActivate: [requireRole('Claimant')], title: 'My claims',

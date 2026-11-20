@@ -218,3 +218,21 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
   - idempotent submit as P2, not built
   - pagination and duplicate detection as out of scope
 - **Checked at my request:** that the assessment brief never entered git history. It hasn't; the .docx has been gitignored from the first commit, and no committed text quotes it.
+
+### 5.5 UI clean-up, microcharts and a product name
+- **My request:**
+  - remove the dev note from the front page
+  - make the Updates panel scroll and stay in sync with the claims list
+  - paginate the list past 10 claims
+  - add microcharts, but only where they genuinely help
+  - give the platform a name and logo
+- **Microcharts:** limited to the dashboard, where rows get compared:
+  - a share meter per market
+  - handler load
+  - an approved/rejected split
+  - a 14-day intake sparkline
+
+  No charts on the claimant and handler screens; their key facts are single values.
+- **The AI's palette check overruled our earlier design:** the skill's palette validator showed the market colours from session 4 failed. Hong Kong and Singapore were nearly identical even for full colour vision. They were swapped for validated colours, drawn in a fixed market order.
+- **Name:** picked from three AI options (Lantern, Meridian, Harbour). I chose **Lantern**, because the brief's core problem is that nobody can see where a claim stands. Tagline: "Every claim visible, from report to payout." The logo is a lantern outline with a teal glow. It doesn't use Chubb's wordmark, which their usage guide forbids.
+- **Front page:** chose the sign-in card from three layouts. It stands in for a sign-in screen, so it now looks like one.

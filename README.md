@@ -1,6 +1,6 @@
-# Claims Platform: Asia Pacific
+# Lantern: claims for Asia Pacific
 
-**One app for motor and property claims across six APAC markets. Claimants report and track claims, handlers work them through to settlement, and managers see outstanding liability in each market's own currency.**
+**Every claim visible, from report to payout.** One app for motor and property claims across six APAC markets. Claimants report and track claims, handlers work them through to settlement, and managers see outstanding liability in each market's own currency.**
 
 Built as a take-home for the Chubb APAC Young Graduate Program (full-stack): **.NET 10 · PostgreSQL · Kafka · Angular 21.**
 
