@@ -13,7 +13,10 @@ services:
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U claims"]
+      # Check over TCP, not the unix socket. During first boot the entrypoint runs a temporary
+      # socket-only server to execute init.sql; a socket check would pass before the insights
+      # database exists, and the APIs could race it.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U claims -d insights"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -42,6 +45,45 @@ services:
       interval: 5s
       timeout: 10s
       retries: 20
+
+  claims-api:
+    build:
+      context: ./backend
+      args: { PROJECT: Claims.Api }
+    environment:
+      ConnectionStrings__Claims: Host=postgres;Port=5432;Database=claims;Username=claims;Password=claims
+      Kafka__BootstrapServers: kafka:29092
+      Cors__Origins__0: http://localhost:4200
+    ports:
+      - "5001:8080"
+    restart: on-failure   # e.g. a transient DB error during startup migrations
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+
+  insights-api:
+    build:
+      context: ./backend
+      args: { PROJECT: Insights.Api }
+    environment:
+      ConnectionStrings__Insights: Host=postgres;Port=5432;Database=insights;Username=claims;Password=claims
+      Kafka__BootstrapServers: kafka:29092
+      Cors__Origins__0: http://localhost:4200
+    ports:
+      - "5002:8080"
+    restart: on-failure
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      # Deliberately NOT depending on claims-api: Insights must start and run without it (E-4).
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - claims-api
+      - insights-api
 
 volumes:
   pgdata:
