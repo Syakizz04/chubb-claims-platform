@@ -24,6 +24,8 @@ public sealed record ClaimEventMessage
     public required string Reference { get; init; }
     public required string MarketCode { get; init; }
     public required string CurrencyCode { get; init; }
+    /// <summary>ISO 4217 minor units, so consumers can format amounts without hard-coding currencies.</summary>
+    public int CurrencyMinorUnits { get; init; } = 2;
     public required string ClaimType { get; init; }
     public required string Status { get; init; }
     public string? PreviousStatus { get; init; }

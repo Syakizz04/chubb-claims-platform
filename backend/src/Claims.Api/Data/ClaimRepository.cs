@@ -109,6 +109,7 @@ public class ClaimRepository(ClaimsDbContext db)
         Reference = c.Reference,
         MarketCode = c.MarketCode,
         CurrencyCode = c.CurrencyCode,
+        CurrencyMinorUnits = c.MinorUnits,
         ClaimType = c.Type.ToString(),
         Status = (e.ToStatus ?? c.Status).ToString(),
         PreviousStatus = e.FromStatus?.ToString(),
