@@ -30,7 +30,8 @@ public static class DashboardEndpoints
                 DashboardCalculator.Exposure(claims, rates),
                 DashboardCalculator.Workload(claims, rates, now),
                 DashboardCalculator.Ageing(claims, rates, now),
-                DashboardCalculator.Performance(claims, now));
+                DashboardCalculator.Performance(claims, now),
+                DashboardCalculator.Intake(claims, now));
         }).WithSummary("M-1..M-6: exposure (local + USD), workload, ageing and performance in one call");
 
         staff.MapGet("/exposure", async (InsightsDbContext db, CancellationToken ct) =>

@@ -43,7 +43,7 @@ On a claim's detail page, a horizontal track shows the claim's journey (Submitte
 | `--surface` | `#ffffff` | Work surfaces |
 | `--accent` | `#00736d` | Primary actions, focus, current selection (5.6:1 on white) |
 | `--danger` / `--warning` / `--success` / `--info` | `#b42318` / `#8a5300` / `#1c7438` / `#1f5fa6` | State only |
-| Market series | KR `#d63a72` · HK `#e07a12` · TW `#7353cf` · TH `#13917f` · MY `#2a72d6` · SG `#c08f06` | Data only |
+| Market series | KR `#2a78d6` · HK `#eb6834` · TW `#1baf7a` · TH `#eda100` · MY `#e87ba4` · SG `#6250d6` | Data only. Validated with the dataviz palette checker (CVD and normal-vision separation, adjacent pairs). Stacked marks use this fixed order, and each colour sits next to its market code. The earlier set failed: HK and SG were nearly identical even for full colour vision. |
 
 - **Type:** IBM Plex Sans (self-hosted via `@fontsource`), on a fixed rem scale with a ratio of about 1.2. `font-variant-numeric: tabular-nums` on all figures.
 - **Motion:** 150–200 ms, used only for state changes.
@@ -54,3 +54,13 @@ On a claim's detail page, a horizontal track shows the claim's journey (Submitte
 - **ISO codes instead of currency symbols.** `$` would be ambiguous across HKD, TWD and SGD, so amounts read `SGD 4,200.00` and `KRW 3,500,000`.
 - **No modals.** Handler actions open inline in the action panel beside the claim, so the claim stays in view while you act on it.
 - **The backend decides which actions appear.** The UI renders `availableActions` from the API instead of re-implementing the state machine.
+
+## Microcharts
+
+They're used only where they help compare rows, and always next to the number they draw:
+- **Exposure share:** a meter in the market colour.
+- **Handler open load:** a neutral meter.
+- **Approved vs rejected split:** status colours, because these are states.
+- **14-day intake:** a sparkline with a 2px line, 10% area wash, and end dot with a surface ring.
+
+Every mark has a hover title. Charts aren't used on the claimant or handler screens: their key facts are single values, which text already shows best.

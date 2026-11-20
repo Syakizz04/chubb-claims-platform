@@ -5,6 +5,10 @@ import { Api } from '../core/api';
 import { AgoPipe, MoneyPipe, UsdPipe } from '../core/format';
 import { live } from '../shared/live';
 import { MarketTag } from '../shared/status';
+import { Meter, Sparkline, Split } from '../shared/micro';
+
+/** Fixed market order for stacked marks: colour follows the market, never its rank. */
+const MARKET_ORDER = ['KR', 'HK', 'TW', 'TH', 'MY', 'SG'];
 
 /**
  * M-1 .. M-6, served by the Insights service from its Kafka-fed read model. Polls every 5 s, and
@@ -12,7 +16,7 @@ import { MarketTag } from '../shared/status';
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, DatePipe, PercentPipe, MoneyPipe, UsdPipe, AgoPipe, MarketTag],
+  imports: [RouterLink, DatePipe, PercentPipe, MoneyPipe, UsdPipe, AgoPipe, MarketTag, Meter, Split, Sparkline],
   template: `
     <div class="page">
       <div class="page-head">
@@ -42,7 +46,7 @@ import { MarketTag } from '../shared/status';
             </div>
 
             <div class="bar" role="img" [attr.aria-label]="barLabel()">
-              @for (m of r.exposure.markets; track m.marketCode) {
+              @for (m of barMarkets(); track m.marketCode) {
                 <span class="seg" [style.flex-grow]="m.amountUsd ?? 0" [style.background]="'var(--m-' + m.marketCode + ')'"
                       [title]="api.marketName(m.marketCode) + ': ' + (m.amountUsd | usd)"></span>
               }
@@ -60,7 +64,12 @@ import { MarketTag } from '../shared/status';
                       <td class="nowrap"><app-market [code]="m.marketCode" /> <span class="mname">{{ api.marketName(m.marketCode) }}</span></td>
                       <td class="right num strong">{{ m.amount | money: m.currencyCode }}</td>
                       <td class="right num muted">{{ m.amountUsd === null ? 'No rate' : (m.amountUsd | usd) }}</td>
-                      <td class="right num">{{ m.amountUsd === null ? '—' : (share(m.amountUsd) | percent: '1.0-0') }}</td>
+                      <td class="right num share">
+                        @if (m.amountUsd !== null) {
+                          <app-meter [value]="m.amountUsd" [max]="maxMarketUsd()" [color]="'var(--m-' + m.marketCode + ')'" [label]="api.marketName(m.marketCode) + ' ' + (share(m.amountUsd) | percent: '1.0-0')" />
+                          <span>{{ share(m.amountUsd) | percent: '1.0-0' }}</span>
+                        } @else { — }
+                      </td>
                       <td class="right num">{{ typeAmount(m.byType, 'Motor') ? (typeAmount(m.byType, 'Motor') | money: m.currencyCode) : '—' }}</td>
                       <td class="right num">{{ typeAmount(m.byType, 'Property') ? (typeAmount(m.byType, 'Property') | money: m.currencyCode) : '—' }}</td>
                       <td class="right num">{{ m.openClaims }}</td>
@@ -85,12 +94,18 @@ import { MarketTag } from '../shared/status';
           <section class="surface" aria-labelledby="wl-h">
             <div class="section">
               <h2 id="wl-h" class="h3">Team workload</h2>
-              <p class="small queue">
-                <a routerLink="/queue"><strong class="num">{{ r.workload.unassignedCount }}</strong> unassigned</a>
-                @if (r.workload.oldestUnassignedDays !== null) {
-                  <span class="muted"> · oldest waiting {{ r.workload.oldestUnassignedDays }} days</span>
-                }
-              </p>
+              <div class="wl-head">
+                <p class="small queue">
+                  <a routerLink="/queue"><strong class="num">{{ r.workload.unassignedCount }}</strong> unassigned</a>
+                  @if (r.workload.oldestUnassignedDays !== null) {
+                    <span class="muted"> · oldest waiting {{ r.workload.oldestUnassignedDays }} days</span>
+                  }
+                </p>
+                <div class="intake">
+                  <app-sparkline [values]="intakeSeries()" [ariaLabel]="'Claims received per day, last 14 days: ' + intakeTotal() + ' in total'" />
+                  <span class="small"><strong class="num">{{ intakeTotal() }}</strong><span class="muted">&nbsp;received in 14 days</span></span>
+                </div>
+              </div>
             </div>
             <div class="table-wrap">
               <table class="data">
@@ -99,7 +114,7 @@ import { MarketTag } from '../shared/status';
                   @for (h of r.workload.handlers; track h.handlerId) {
                     <tr>
                       <td>{{ h.handlerName }}</td>
-                      <td class="right num">{{ h.openClaims }}</td>
+                      <td class="right num"><span class="with-meter"><app-meter [value]="h.openClaims" [max]="maxOpen()" [label]="h.openClaims + ' open'" /> {{ h.openClaims }}</span></td>
                       <td class="right num">{{ h.awaitingInfo }}</td>
                       <td class="right num" [class.alert]="(h.oldestOpenDays ?? 0) > 30">{{ h.oldestOpenDays }}d</td>
                       <td class="right num">{{ h.reserveUsd | usd }}</td>
@@ -131,7 +146,7 @@ import { MarketTag } from '../shared/status';
           <div class="section"><h2 id="perf-h" class="h3">Decisions in the last 30 days</h2></div>
           <div class="table-wrap">
             <table class="data">
-              <thead><tr><th>Handler</th><th class="right">Decided</th><th class="right">Approved</th><th class="right">Rejected</th><th class="right">Avg. days to decision</th></tr></thead>
+              <thead><tr><th>Handler</th><th class="right">Decided</th><th class="right">Approved</th><th class="right">Rejected</th><th>Split</th><th class="right">Avg. days to decision</th></tr></thead>
               <tbody>
                 @for (p of r.performance; track p.handlerId) {
                   <tr>
@@ -139,9 +154,10 @@ import { MarketTag } from '../shared/status';
                     <td class="right num">{{ p.decided30d }}</td>
                     <td class="right num">{{ p.approved30d }}</td>
                     <td class="right num">{{ p.rejected30d }}</td>
+                    <td><app-split [a]="p.approved30d" [b]="p.rejected30d" aLabel="Approved" bLabel="Rejected" /></td>
                     <td class="right num">{{ p.avgDaysToDecision ?? '—' }}</td>
                   </tr>
-                } @empty { <tr><td colspan="5" class="muted">No decisions in the last 30 days.</td></tr> }
+                } @empty { <tr><td colspan="6" class="muted">No decisions in the last 30 days.</td></tr> }
               </tbody>
             </table>
           </div>
@@ -180,6 +196,11 @@ import { MarketTag } from '../shared/status';
     .cnt { text-align: right; font-weight: 600; }
     .usd { text-align: right; font-size: var(--step--1); }
     .perf .section { padding-bottom: 0.25rem; }
+    .share { white-space: nowrap; }
+    .share app-meter { --meter-w: 3.5rem; margin-right: 0.5rem; }
+    .with-meter { display: inline-flex; align-items: center; gap: 0.5rem; --meter-w: 3rem; }
+    .wl-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .intake { display: inline-flex; align-items: center; gap: 0.625rem; }
   `,
 })
 export class Dashboard {
@@ -188,6 +209,16 @@ export class Dashboard {
 
   private readonly total = computed(() => this.report.value()?.exposure.totalUsd ?? 0);
   private readonly maxAge = computed(() => Math.max(1, ...(this.report.value()?.ageing ?? []).map(b => b.count)));
+
+  readonly barMarkets = computed(() =>
+    [...(this.report.value()?.exposure.markets ?? [])].sort((a, b) => MARKET_ORDER.indexOf(a.marketCode) - MARKET_ORDER.indexOf(b.marketCode)));
+  readonly maxMarketUsd = computed(() => Math.max(1, ...(this.report.value()?.exposure.markets ?? []).map(m => m.amountUsd ?? 0)));
+  readonly maxOpen = computed(() => Math.max(1, ...(this.report.value()?.workload.handlers ?? []).map(h => h.openClaims)));
+  readonly intakeSeries = computed(() => (this.report.value()?.intake ?? []).map(d => ({
+    value: d.count,
+    label: `${new Date(d.date + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}: ${d.count} received`,
+  })));
+  readonly intakeTotal = computed(() => (this.report.value()?.intake ?? []).reduce((s, d) => s + d.count, 0));
 
   share(usd: number) { return this.total() ? usd / this.total() : 0; }
   ageShare(count: number) { return (count / this.maxAge()) * 100; }

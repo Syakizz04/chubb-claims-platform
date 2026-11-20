@@ -51,13 +51,17 @@ public record HandlerPerformance(
     int Rejected30d,
     double? AvgDaysToDecision);
 
+/// <summary>Claims received on one UTC day (intake trend for the workload panel).</summary>
+public record DailyCount(DateOnly Date, int Count);
+
 public record DashboardReport(
     DateTimeOffset GeneratedAt,
     DateTimeOffset? LastProcessedAt, // M-6: when Insights last applied an event, so read-model staleness is visible
     ExposureReport Exposure,
     WorkloadReport Workload,
     IReadOnlyList<AgeingBucket> Ageing,
-    IReadOnlyList<HandlerPerformance> Performance);
+    IReadOnlyList<HandlerPerformance> Performance,
+    IReadOnlyList<DailyCount> Intake);
 
 /// <summary>
 /// Pure aggregation over snapshots: no I/O, so it is unit and property tested directly.
@@ -161,6 +165,17 @@ public static class DashboardCalculator
                 g.Count(c => c.Status == "Rejected"),
                 Math.Round(g.Average(c => (c.DecidedAt!.Value - c.SubmittedAt).TotalDays), 1)))
             .OrderByDescending(p => p.Decided30d)
+            .ToList();
+    }
+
+    /// <summary>Claims submitted per UTC day for the last <paramref name="days"/> days, oldest first, zero-filled.</summary>
+    public static IReadOnlyList<DailyCount> Intake(IReadOnlyCollection<ClaimSnapshot> claims, DateTimeOffset now, int days = 14)
+    {
+        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var counts = claims.GroupBy(c => DateOnly.FromDateTime(c.SubmittedAt.UtcDateTime)).ToDictionary(g => g.Key, g => g.Count());
+        return Enumerable.Range(0, days)
+            .Select(i => today.AddDays(i - days + 1))
+            .Select(d => new DailyCount(d, counts.GetValueOrDefault(d)))
             .ToList();
     }
 

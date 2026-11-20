@@ -23,12 +23,16 @@
   --info: #1f5fa6;
   --info-tint: #e8f0fa;
 
-  --m-KR: #d63a72;
-  --m-HK: #e07a12;
-  --m-TW: #7353cf;
-  --m-TH: #13917f;
-  --m-MY: #2a72d6;
-  --m-SG: #c08f06;
+  /* Market identity colours: dataviz reference slots 1-5 and 7 (green skipped: it means "settled"),
+     in a fixed market order. Validated (scripts/validate_palette.js, light): CVD and normal-vision
+     separation pass for adjacent pairs. Charts draw markets in this same order, and a market's colour
+     always sits next to its code, so identity never depends on colour alone. */
+  --m-KR: #2a78d6;
+  --m-HK: #eb6834;
+  --m-TW: #1baf7a;
+  --m-TH: #eda100;
+  --m-MY: #e87ba4;
+  --m-SG: #6250d6;
 
   --radius: 2px;
   --shadow: 0 1px 2px rgb(16 19 24 / 0.06), 0 4px 12px rgb(16 19 24 / 0.04);

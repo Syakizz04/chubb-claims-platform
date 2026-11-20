@@ -112,6 +112,7 @@ export interface HandlerWorkload {
   handlerId: string; handlerName: string; openClaims: number; awaitingInfo: number; oldestOpenDays: number | null; reserveUsd: number;
 }
 export interface WorkloadReport { unassignedCount: number; oldestUnassignedDays: number | null; handlers: HandlerWorkload[]; }
+export interface DailyCount { date: string; count: number; }
 export interface AgeingBucket { label: string; minDays: number; maxDays: number | null; count: number; reserveUsd: number; }
 export interface HandlerPerformance {
   handlerId: string; handlerName: string; decided30d: number; approved30d: number; rejected30d: number; avgDaysToDecision: number | null;
@@ -123,6 +124,7 @@ export interface DashboardReport {
   workload: WorkloadReport;
   ageing: AgeingBucket[];
   performance: HandlerPerformance[];
+  intake: DailyCount[];
 }
 export interface ClaimantNotification { id: string; claimId: string; reference: string; message: string; createdAt: string; }
 

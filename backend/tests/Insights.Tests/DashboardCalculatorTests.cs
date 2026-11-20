@@ -103,6 +103,25 @@ public class DashboardCalculatorTests
         Assert.Equal(2, DashboardCalculator.Ageing(claims, Rates, Now).Sum(b => b.Count));
     }
 
+    [Fact]
+    public void Intake_counts_claims_per_day_for_the_last_14_days_zero_filled()
+    {
+        var claims = new[]
+        {
+            Claim("SG", "SGD", 1m, ageDays: 0), Claim("SG", "SGD", 1m, ageDays: 0),
+            Claim("KR", "KRW", 1m, ageDays: 3, status: "Settled"),   // closed claims still count as intake
+            Claim("HK", "HKD", 1m, ageDays: 40),                      // outside the window
+        };
+
+        var intake = DashboardCalculator.Intake(claims, Now);
+
+        Assert.Equal(14, intake.Count);
+        Assert.Equal(DateOnly.FromDateTime(Now.UtcDateTime), intake[^1].Date);
+        Assert.Equal(2, intake[^1].Count);
+        Assert.Equal(1, intake[^4].Count);
+        Assert.Equal(3, intake.Sum(d => d.Count));
+    }
+
     // ------------------------------------------------------------------ properties
 
     private static readonly (string Market, string Currency)[] Markets =
