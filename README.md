@@ -4,7 +4,7 @@
 
 Lantern is a claims platform for motor and property insurance across six Asia Pacific markets: South Korea, Hong Kong, Taiwan, Thailand, Malaysia and Singapore. Claimants report and track their claims, handlers work them through to a decision, and managers see how much is owed in every market.
 
-I built it for the Chubb APAC Young Graduate Program take-home, with **.NET 10, PostgreSQL, Kafka and Angular 21**.
+Built with **.NET 10, PostgreSQL, Kafka and Angular 21**.
 
 ![Manager dashboard: outstanding exposure per market in local currency and USD, team workload, claim ageing and decisions](docs/images/dashboard.png)
 
