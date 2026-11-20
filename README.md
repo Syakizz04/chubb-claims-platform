@@ -52,12 +52,47 @@ Switch users with the **DEV** selector in the header. Each request carries `X-Us
 
 ## Run for development
 
+**Prerequisites:** .NET 10 SDK, Node 22+, plus Postgres and Kafka from Docker or Homebrew.
+
 ```bash
-docker compose up -d postgres kafka              # infrastructure only
+docker compose up -d postgres kafka              # infrastructure only (or the Homebrew option below)
 cd backend/src/Claims.Api   && dotnet run          # http://localhost:5001
 cd backend/src/Insights.Api && dotnet run          # http://localhost:5002
 cd frontend && npm install && npm start           # http://localhost:4200 (proxies /api to both)
 ```
+
+<details>
+<summary>No Docker? Run Postgres and Kafka natively with Homebrew (macOS)</summary>
+
+The services expect Postgres on **port 5433** (user and password `claims`, databases `claims` and `insights`) and Kafka on **127.0.0.1:9092**.
+
+```bash
+brew install postgresql@17 kafka
+
+# Postgres on 5433
+initdb -D ./.local/pg -U claims --pwfile=<(echo claims) -A scram-sha-256
+pg_ctl -D ./.local/pg -o "-p 5433" -l ./.local/pg.log start
+psql -h localhost -p 5433 -U claims -d postgres -c "CREATE DATABASE claims;" -c "CREATE DATABASE insights;"
+
+# Kafka (single-node KRaft), using the same settings as docker-compose.yml
+cat > ./.local/kafka.properties <<'EOF'
+process.roles=broker,controller
+node.id=1
+controller.quorum.voters=1@localhost:9093
+listeners=PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
+advertised.listeners=PLAINTEXT://localhost:9092
+controller.listener.names=CONTROLLER
+listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+log.dirs=./.local/kafka-logs
+offsets.topic.replication.factor=1
+transaction.state.log.replication.factor=1
+transaction.state.log.min.isr=1
+auto.create.topics.enable=false
+EOF
+kafka-storage format -t "$(kafka-storage random-uuid)" -c ./.local/kafka.properties
+kafka-server-start ./.local/kafka.properties
+```
+</details>
 
 ## Tests
 

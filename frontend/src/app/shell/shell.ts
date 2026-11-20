@@ -65,8 +65,14 @@ import { Session } from '../core/session';
     }
     select:focus-visible { outline: 2px solid #3fc4ba; outline-offset: 1px; }
     @media (max-width: 720px) {
-      .inner { gap: 1rem; padding: 0 1rem; }
+      /* Two rows on phones: product + user switcher, then the role's navigation. */
+      .inner { flex-wrap: wrap; height: auto; gap: 0 1rem; padding: 0.5rem 1rem 0; }
+      .product { order: 1; flex: 1; }
+      .switcher { order: 2; }
+      nav { order: 3; flex-basis: 100%; margin: 0 -0.75rem; }
+      nav a { height: 2.75rem; }
       .region { display: none; }
+      select { max-width: 11rem; }
     }
   `,
 })

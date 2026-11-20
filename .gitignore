@@ -17,3 +17,9 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Third-party Claude Code skills (installed locally, not part of the submission)
+.claude/
+
+# Local native Postgres/Kafka data (README "No Docker" option)
+.local/

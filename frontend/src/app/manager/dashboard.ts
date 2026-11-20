@@ -57,12 +57,12 @@ import { MarketTag } from '../shared/status';
                 <tbody>
                   @for (m of r.exposure.markets; track m.marketCode) {
                     <tr>
-                      <td><app-market [code]="m.marketCode" /> <span class="mname">{{ api.marketName(m.marketCode) }}</span></td>
+                      <td class="nowrap"><app-market [code]="m.marketCode" /> <span class="mname">{{ api.marketName(m.marketCode) }}</span></td>
                       <td class="right num strong">{{ m.amount | money: m.currencyCode }}</td>
                       <td class="right num muted">{{ m.amountUsd | usd }}</td>
                       <td class="right num">{{ share(m.amountUsd) | percent: '1.0-0' }}</td>
-                      <td class="right num">{{ typeAmount(m.byType, 'Motor') | money: m.currencyCode }}</td>
-                      <td class="right num">{{ typeAmount(m.byType, 'Property') | money: m.currencyCode }}</td>
+                      <td class="right num">{{ typeAmount(m.byType, 'Motor') ? (typeAmount(m.byType, 'Motor') | money: m.currencyCode) : '—' }}</td>
+                      <td class="right num">{{ typeAmount(m.byType, 'Property') ? (typeAmount(m.byType, 'Property') | money: m.currencyCode) : '—' }}</td>
                       <td class="right num">{{ m.openClaims }}</td>
                     </tr>
                   } @empty {
@@ -156,10 +156,12 @@ import { MarketTag } from '../shared/status';
     .bar { display: flex; height: 14px; gap: 2px; margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; background: var(--panel); }
     .seg { flex-basis: 0; min-width: 3px; transition: flex-grow 250ms var(--ease); }
     .mname { margin-left: 0.25rem; }
+    .nowrap { white-space: nowrap; }
     .strong { font-weight: 600; }
     .rates { margin-top: 0.75rem; }
     .grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.5rem; margin-bottom: 1.5rem; }
-    @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 560px) { .ageing li { grid-template-columns: 5.5rem 1fr 1.5rem; } .usd { display: none; } }
     .h3 { font-size: var(--step-1); }
     .queue { margin-top: -0.25rem; }
     .alert { color: var(--danger); font-weight: 600; }

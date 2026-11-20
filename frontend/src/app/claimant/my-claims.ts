@@ -83,7 +83,7 @@ import { live } from '../shared/live';
   styles: `
     .attention { margin-bottom: 1.25rem; }
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.5rem; align-items: start; }
-    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
     .h3 { font-size: var(--step-1); }
     .update { padding: 0.75rem 0; border-top: 1px solid var(--line); }
     .update:first-of-type { border-top: 0; padding-top: 0; }
