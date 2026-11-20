@@ -91,7 +91,7 @@ All manager views are served by the **Insights service**, built from Kafka event
 
 | ID | Priority | Criterion |
 |---|---|---|
-| M-1 | P0 | **Outstanding exposure.** The sum of reserves on open claims, broken down by market and claim type. Each market's figure is **displayed in that market's own currency**, formatted with its symbol and decimal places (e.g. ₩12,500,000 · RM 8,200.00). |
+| M-1 | P0 | **Outstanding exposure.** The sum of reserves on open claims, broken down by market and claim type. Each market's figure is **displayed in that market's own currency**, formatted with its ISO currency code and decimal places (e.g. KRW 12,500,000 · MYR 8,200.00). Symbols are ambiguous: "$" is used by HKD, TWD and SGD. |
 | M-2 | P0 | **USD as the main total.** The headline exposure figure is in **USD** (Chubb's reporting currency), and each market also shows its USD equivalent next to its local figure. Converted at **static seeded FX rates**, clearly labelled "indicative, rates as of {date}". The USD figure is calculated when it is read and is **never stored**. |
 | M-3 | P0 | **Team workload.** For each handler: open claims, how many are awaiting info, and the age of their oldest open claim. Also the unassigned queue size and the age of the oldest unassigned claim. |
 | M-4 | P1 | **Ageing.** Open claims grouped into 0–7, 8–30 and 31+ days since submission. |

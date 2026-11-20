@@ -134,3 +134,36 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
 - **What happened:** on its 6th random run, FsCheck found that a **claimant could pick up a claim and become its handler**. The `Claim` aggregate trusted whoever called it; only the HTTP `Handler` policy blocked this.
 - **Decision:** fixed it in the domain. `PickUp` now takes a `User` and requires the Handler role.
 - **Why:** business rules shouldn't depend on which entry point is used. A background job, script or future endpoint would have bypassed the HTTP policy. The example-based tests all used valid handlers, so they never could have caught this. That's the argument for property-based testing.
+
+---
+
+## Session 4: Frontend (Claude Code)
+
+### 4.1 Impeccable design skill: installed, binary not run
+- **Asked:** download the Impeccable UI design skill and follow it for the frontend.
+- **AI said:** it cloned the skill (v4.10, Apache 2.0) and reviewed it before installing. The guides are Markdown, but the `scripts/impeccable` launcher **downloads and runs a compiled binary**. It installed the skill locally (gitignored, not part of the submission) and **didn't run the binary**, using the skill's documented fallback of reading the guides directly.
+- **Decision:** Accepted.
+- **Why:** running an unreviewed downloaded executable just for design guidance isn't worth the supply-chain risk, and the guidance itself is in plain text.
+- **Applied from the skill:** "Operate" mode (familiar controls, restrained colour, density allowed); every state covered (loading skeletons, empty states that explain what to do, errors, disabled and busy); no modals; no eyebrow labels, gradient text or hero-metric tiles; a self-hosted typeface; tabular figures; themed focus rings and selection.
+
+### 4.2 Chubb design language: researched, not guessed
+- **Asked:** follow the general UI design rules Chubb uses.
+- **AI said:** it researched public sources. The COLLINS rebrand case study gives "simplicity, clarity and certainty", a plain wordmark balanced by "bold, color-forward" accents, and Claims as a top-level destination. **No public source gave hex values or a typeface**, so the AI said plainly that the palette and font are our own choices in that spirit, not Chubb's official ones.
+- **Decision:** Accepted.
+- **Why:** inventing "official" brand colours would be a claim the panel could easily disprove.
+  - Chubb's usage guide says **the logo must not be re-created or re-set**, so the app uses a plain-text product name and no wordmark.
+  - "Colour-forward" became **one colour per market, used only for data**. That gives Chubb's colour-forward feel without decorating an operational tool.
+
+### 4.3 ISO currency codes, not symbols
+- **AI said:** `$` is ambiguous across HKD, TWD and SGD, so amounts display as `SGD 4,200.00` and `KRW 3,500,000`. This changes the acceptance criteria wording, which had said "symbol".
+- **Decision:** Accepted.
+- **Why:** in a multi-market financial tool, an ambiguous figure is worse than a slightly less friendly one.
+
+### 4.4 Frontend architecture choices
+- **The backend decides the buttons.** The staff claim page renders `availableActions` from the API instead of re-implementing the state machine in TypeScript, so the rules live in one place.
+- **Polling for async updates** (claimant every 10s, dashboard every 5s, queue every 10s), behind one `live()` helper. It's simple and good enough at this scale; server-sent events fed from Kafka are the next step. The dashboard shows "Updated X ago" so eventual consistency is visible, not hidden.
+- **409 handling:** if another handler picks up a claim first, the queue says so plainly and refreshes. Any other conflict refreshes the claim to show its real current state.
+- **Hypothesis-style tests on the frontend** weren't worth it here: the logic worth testing (money formatting, status track) is small and fully enumerable, so it has plain unit tests.
+
+### 4.5 Environment issue: disk full, Docker storage corrupted
+- Mid-build, the Mac's disk filled up (173 MB free) and Docker's image store started returning I/O errors. The AI stopped and asked me to free space rather than deleting anything itself. After I freed space, Docker's store stayed corrupted and needed a purge, which is my call because it removes every Docker image on the machine. Frontend work carried on in the meantime because it doesn't need Docker.
