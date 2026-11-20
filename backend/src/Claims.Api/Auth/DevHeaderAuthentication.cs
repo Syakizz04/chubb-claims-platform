@@ -22,7 +22,7 @@ public class DevHeaderAuthenticationHandler(
     ClaimsDbContext db)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
-    public const string Scheme = "DevHeader";
+    public const string SchemeName = "DevHeader";
     public const string Header = "X-User-Id";
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -40,9 +40,9 @@ public class DevHeaderAuthenticationHandler(
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Name, user.DisplayName),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
-        ], Scheme);
+        ], SchemeName);
 
-        return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme));
+        return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));
     }
 }
 

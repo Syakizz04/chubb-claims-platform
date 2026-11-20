@@ -3,6 +3,7 @@ using Claims.Api.Auth;
 using Claims.Api.Data;
 using Claims.Api.Domain;
 using Claims.Api.Features;
+using Claims.Api.Outbox;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,9 +18,13 @@ builder.Services.AddScoped<ClaimCommands>();
 builder.Services.AddScoped<ClaimQueries>();
 builder.Services.AddScoped<Seeder>();
 
+builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
+if (builder.Configuration.GetValue("Outbox:Enabled", true))
+    builder.Services.AddHostedService<OutboxPublisher>();
+
 builder.Services
-    .AddAuthentication(DevHeaderAuthenticationHandler.Scheme)
-    .AddScheme<AuthenticationSchemeOptions, DevHeaderAuthenticationHandler>(DevHeaderAuthenticationHandler.Scheme, null);
+    .AddAuthentication(DevHeaderAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, DevHeaderAuthenticationHandler>(DevHeaderAuthenticationHandler.SchemeName, null);
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.Claimant, p => p.RequireRole(nameof(UserRole.Claimant)))
     .AddPolicy(Policies.Handler, p => p.RequireRole(nameof(UserRole.Handler)))

@@ -15,7 +15,7 @@ public class DevHeaderOpenApiTransformer : IOpenApiDocumentTransformer
 
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-        document.Components.SecuritySchemes[DevHeaderAuthenticationHandler.Scheme] = new OpenApiSecurityScheme
+        document.Components.SecuritySchemes[DevHeaderAuthenticationHandler.SchemeName] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.ApiKey,
             In = ParameterLocation.Header,
@@ -25,7 +25,7 @@ public class DevHeaderOpenApiTransformer : IOpenApiDocumentTransformer
         document.Security ??= [];
         document.Security.Add(new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference(DevHeaderAuthenticationHandler.Scheme, document)] = [],
+            [new OpenApiSecuritySchemeReference(DevHeaderAuthenticationHandler.SchemeName, document)] = [],
         });
         return Task.CompletedTask;
     }
