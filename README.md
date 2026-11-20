@@ -1,30 +1,101 @@
-# Chubb APAC Claims Platform
+# Claims Platform: Asia Pacific
 
-A claims platform for motor and property claims across six APAC markets (KR, HK, TW, TH, MY, SG).
-Claimants report and track claims; claims staff pick up, assess and settle them; managers see
-workload and outstanding liability exposure.
+A claims platform for motor and property claims across six APAC markets: South Korea, Hong Kong, Taiwan, Thailand, Malaysia and Singapore.
 
-> Work in progress. See [`docs/ACCEPTANCE_CRITERIA.md`](docs/ACCEPTANCE_CRITERIA.md) for the
-> definition of done and [`docs/AI_JOURNAL.md`](docs/AI_JOURNAL.md) for how AI was used.
+- **Claimants** report an incident, track their claim, answer questions from the claims team and receive decisions.
+- **Claims handlers** pick up incoming claims, assess them, and take them through to settlement or rejection.
+- **Managers** see team workload and outstanding liability exposure, per market currency and in USD.
+
+| Doc | What's in it |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Services, REST vs Kafka, outbox and idempotency, domain model, trade-offs |
+| [docs/ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) | Definition of done, with IDs referenced by commits and tests |
+| [docs/DESIGN.md](docs/DESIGN.md) | Frontend design direction and tokens |
+| [docs/AI_JOURNAL.md](docs/AI_JOURNAL.md) | What I asked the AI, what I accepted, challenged and overrode |
+
+## Run it
+
+**Prerequisites:** Docker Desktop.
+
+```bash
+docker compose up --build
+```
+
+| URL | What |
+|---|---|
+| http://localhost:4200 | The app. Pick a role on the welcome screen. |
+| http://localhost:5001/swagger | Claims API (Swagger; use the Authorize box with a user id such as `handler-1`) |
+| http://localhost:5002/swagger | Insights API |
+
+On first start, the Claims service migrates its database and seeds 6 markets, 10 users and 12 demo claims spread across every status and age bucket. These flow through Kafka to Insights, so the dashboard is populated within seconds.
+
+### Seeded users (dev identity, no passwords)
+
+| Role | Users |
+|---|---|
+| Claimant | `claimant-sg` Mei Ling Tan · `claimant-kr` Kim Min-jun · `claimant-hk` · `claimant-tw` · `claimant-th` · `claimant-my` |
+| Handler | `handler-1` Priya Nair · `handler-2` Daniel Wong · `handler-3` Siti Rahman |
+| Manager | `manager-1` Grace Lim |
+
+Switch users with the **DEV** selector in the header. Each request carries `X-User-Id`. This is a development stand-in, **not** authentication (see the architecture doc).
+
+### A two-minute tour
+1. **Claimant** (Mei Ling Tan): *Report a claim* → you get a `CLM-SG-…` reference.
+2. **Handler** (Priya Nair): *Incoming* → **Pick up** → *Request information*.
+3. **Claimant**: the claim now asks for information → reply.
+4. **Handler**: *Adjust reserve* → *Approve* → *Settle and close*.
+5. **Manager** (Grace Lim): watch exposure and workload update within a few seconds. "Updated X ago" shows how fresh the read model is.
+
+### Resilience demos
+- **Kafka down:** `docker compose stop kafka`, then submit a claim. It still succeeds, and the event waits in the outbox. `docker compose start kafka` and it's delivered.
+- **Insights down:** `docker compose stop insights-api`. Claims keep working, and the dashboard shows a clear message. Start it again and it catches up from its Kafka offset.
+
+## Run for development
+
+```bash
+docker compose up -d postgres kafka              # infrastructure only
+cd backend/src/Claims.Api   && dotnet run          # http://localhost:5001
+cd backend/src/Insights.Api && dotnet run          # http://localhost:5002
+cd frontend && npm install && npm start           # http://localhost:4200 (proxies /api to both)
+```
+
+## Tests
+
+```bash
+cd backend && dotnet test        # 101 tests: unit, property-based (FsCheck), integration (Testcontainers; needs Docker)
+cd frontend && npx ng test --watch=false   # 8 tests (vitest)
+```
+
+What they cover:
+- **Domain:** every legal and illegal (status, action) pair; money precision per currency; reserve rules; and **property-based** random action sequences that check the claim stays consistent after every step. This found a real bug, recorded in the journal (3.4).
+- **API, against real Postgres:** the full lifecycle; **concurrent pick-up has exactly one winner**; claimants can't see each other's claims or any reserve; role protection; ProblemDetails status codes.
+- **Insights:** random duplicate or reordered delivery always gives the same projection; the USD headline always equals the sum of the market rows; redelivering a whole stream to a real database is a no-op.
 
 ## Layout
 
 ```
 backend/
-  src/Claims.Api        REST API: claim lifecycle, owns the claims database, publishes events (outbox -> Kafka)
-  src/Insights.Api      Kafka consumer: builds exposure/workload read models, serves dashboard endpoints
-  src/Claims.Contracts  The event contract shared by both services (the only thing they share)
-  tests/                xUnit unit and integration tests (Testcontainers Postgres)
-infra/                  Postgres init script
-docker-compose.yml      Postgres + Kafka (KRaft), plus the services
+  src/Claims.Api        claim lifecycle REST API, domain, EF Core, outbox publisher
+  src/Insights.Api      Kafka consumer, read model, dashboard API
+  src/Claims.Contracts  the event contract (the only shared code)
+  tests/                xUnit + FsCheck + Testcontainers
+frontend/               Angular 21 (standalone, signals), nginx in Docker
+infra/                  Postgres init (one database per service)
+docs/                   architecture, acceptance criteria, design, AI journal
 ```
 
-## Running locally
+## What I prioritised and what I left out
 
-Prerequisites: Docker, .NET 10 SDK.
+The brief asks for **backend first**, so the backend is where the depth is: a correct state machine, transactional outbox, idempotent consumer, real concurrency handling and over a hundred tests. The frontend covers every role's core flows, but it is deliberately plain on edge cases.
 
-```bash
-docker compose up -d     # infrastructure
-```
+**Left out on purpose:**
+- real authentication
+- document upload
+- policy and coverage checks
+- payments
+- live FX rates
+- email and SMS delivery
+- reassigning claims (M-7)
+- claimant withdrawal (C-8)
 
-(Full one-command start-up is added as the services land.)
+Each is listed with its production approach in [ACCEPTANCE_CRITERIA.md §8](docs/ACCEPTANCE_CRITERIA.md) and [ARCHITECTURE.md](docs/ARCHITECTURE.md#production-next-steps).
