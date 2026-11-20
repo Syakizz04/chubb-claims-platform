@@ -12,12 +12,12 @@ public class Seeder(ClaimsDbContext db, ClaimRepository repo, TimeProvider clock
 {
     public static readonly Market[] Markets =
     [
-        new() { Code = "KR", Name = "South Korea", CurrencyCode = "KRW", MinorUnits = 0 },
-        new() { Code = "HK", Name = "Hong Kong", CurrencyCode = "HKD", MinorUnits = 2 },
-        new() { Code = "TW", Name = "Taiwan", CurrencyCode = "TWD", MinorUnits = 2 },
-        new() { Code = "TH", Name = "Thailand", CurrencyCode = "THB", MinorUnits = 2 },
-        new() { Code = "MY", Name = "Malaysia", CurrencyCode = "MYR", MinorUnits = 2 },
-        new() { Code = "SG", Name = "Singapore", CurrencyCode = "SGD", MinorUnits = 2 },
+        new() { Code = "KR", Name = "South Korea", CurrencyCode = "KRW", MinorUnits = 0, TimeZoneId = "Asia/Seoul" },
+        new() { Code = "HK", Name = "Hong Kong", CurrencyCode = "HKD", MinorUnits = 2, TimeZoneId = "Asia/Hong_Kong" },
+        new() { Code = "TW", Name = "Taiwan", CurrencyCode = "TWD", MinorUnits = 2, TimeZoneId = "Asia/Taipei" },
+        new() { Code = "TH", Name = "Thailand", CurrencyCode = "THB", MinorUnits = 2, TimeZoneId = "Asia/Bangkok" },
+        new() { Code = "MY", Name = "Malaysia", CurrencyCode = "MYR", MinorUnits = 2, TimeZoneId = "Asia/Kuala_Lumpur" },
+        new() { Code = "SG", Name = "Singapore", CurrencyCode = "SGD", MinorUnits = 2, TimeZoneId = "Asia/Singapore" },
     ];
 
     public static readonly User[] Users =

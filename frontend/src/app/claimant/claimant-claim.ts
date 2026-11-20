@@ -47,7 +47,7 @@ import { Timeline } from '../shared/timeline';
                   <form (ngSubmit)="respond(c.id)" class="reply">
                     <div class="field">
                       <label for="reply">Your reply</label>
-                      <textarea id="reply" class="input" name="reply" [(ngModel)]="reply" rows="4" required
+                      <textarea id="reply" class="input" maxlength="1000" name="reply" [(ngModel)]="reply" rows="4" required
                                 [attr.aria-invalid]="replyError() ? true : null"></textarea>
                       @if (replyError(); as e) { <span class="error">{{ e }}</span> }
                     </div>

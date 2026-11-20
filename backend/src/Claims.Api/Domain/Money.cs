@@ -7,8 +7,14 @@ public static class Money
     public static bool HasValidPrecision(decimal amount, int minorUnits) =>
         decimal.Round(amount, minorUnits) == amount;
 
+    /// <summary>Upper bound that fits numeric(19,4) with room to spare (≈ USD 720 bn even in KRW).</summary>
+    public const decimal MaxAmount = 999_999_999_999_999m;
+
     public static void EnsureValid(string field, decimal amount, int minorUnits, bool allowZero = false)
     {
+        if (amount > MaxAmount)
+            throw new DomainValidationException(field, "Amount is too large.");
+
         if (amount < 0 || (!allowZero && amount == 0))
             throw new DomainValidationException(field, allowZero ? "Amount cannot be negative." : "Amount must be greater than zero.");
 

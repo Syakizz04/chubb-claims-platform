@@ -20,7 +20,7 @@ public static class Endpoints
 
         api.MapGet("/markets", async (ClaimsDbContext db, CancellationToken ct) =>
                 await db.Markets.AsNoTracking().OrderBy(m => m.Name)
-                    .Select(m => new MarketDto(m.Code, m.Name, m.CurrencyCode, m.MinorUnits)).ToListAsync(ct))
+                    .Select(m => new MarketDto(m.Code, m.Name, m.CurrencyCode, m.MinorUnits, m.TimeZoneId)).ToListAsync(ct))
             .WithTags("Reference");
 
         api.MapGet("/dev/users", async (ClaimsDbContext db, CancellationToken ct) =>

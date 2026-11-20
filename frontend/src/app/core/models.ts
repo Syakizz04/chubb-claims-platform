@@ -10,7 +10,7 @@ export type ClaimEventType =
 export type StaffAction = 'PickUp' | 'RequestInfo' | 'AdjustReserve' | 'Approve' | 'Reject' | 'Settle' | 'AddNote';
 
 export interface User { id: string; displayName: string; role: Role; }
-export interface Market { code: string; name: string; currencyCode: string; minorUnits: number; }
+export interface Market { code: string; name: string; currencyCode: string; minorUnits: number; timeZoneId: string; }
 
 export interface TimelineEntry {
   sequence: number;

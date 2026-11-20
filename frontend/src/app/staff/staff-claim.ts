@@ -111,7 +111,7 @@ import { Timeline } from '../shared/timeline';
                     @case ('RequestInfo') {
                       <div class="field">
                         <label for="q">Question for the claimant</label>
-                        <textarea id="q" class="input" name="q" [(ngModel)]="text" rows="4" placeholder="e.g. Please send photos of the damage and the repair quote."></textarea>
+                        <textarea id="q" class="input" maxlength="1000" name="q" [(ngModel)]="text" rows="4" placeholder="e.g. Please send photos of the damage and the repair quote."></textarea>
                         <span class="hint">The claimant sees this exactly as written.</span>
                       </div>
                     }
@@ -124,7 +124,7 @@ import { Timeline } from '../shared/timeline';
                       </div>
                       <div class="field">
                         <label for="rr">Reason</label>
-                        <input id="rr" class="input" name="rr" [(ngModel)]="text" placeholder="e.g. Repair quote received" />
+                        <input id="rr" class="input" maxlength="1000" name="rr" [(ngModel)]="text" placeholder="e.g. Repair quote received" />
                       </div>
                     }
                     @case ('Approve') {
@@ -136,13 +136,13 @@ import { Timeline } from '../shared/timeline';
                       </div>
                       <div class="field">
                         <label for="an">Note to claimant (optional)</label>
-                        <input id="an" class="input" name="an" [(ngModel)]="text" />
+                        <input id="an" class="input" maxlength="1000" name="an" [(ngModel)]="text" />
                       </div>
                     }
                     @case ('Reject') {
                       <div class="field">
                         <label for="rj">Reason</label>
-                        <textarea id="rj" class="input" name="rj" [(ngModel)]="text" rows="4"></textarea>
+                        <textarea id="rj" class="input" maxlength="1000" name="rj" [(ngModel)]="text" rows="4"></textarea>
                         <span class="hint">The claimant sees this reason. The reserve is released.</span>
                       </div>
                     }
@@ -152,7 +152,7 @@ import { Timeline } from '../shared/timeline';
                     @case ('AddNote') {
                       <div class="field">
                         <label for="n">Internal note</label>
-                        <textarea id="n" class="input" name="n" [(ngModel)]="text" rows="4"></textarea>
+                        <textarea id="n" class="input" maxlength="1000" name="n" [(ngModel)]="text" rows="4"></textarea>
                         <span class="hint">Visible to staff only.</span>
                       </div>
                     }

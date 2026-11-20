@@ -73,7 +73,7 @@ public class Claim
     {
         Money.EnsureValid(nameof(input.ClaimedAmount), input.ClaimedAmount, market.MinorUnits);
 
-        if (input.IncidentDate > DateOnly.FromDateTime(now.UtcDateTime))
+        if (input.IncidentDate > market.LocalDate(now))
             throw new DomainValidationException(nameof(input.IncidentDate), "Incident date cannot be in the future.");
 
         if (input.Type == ClaimType.Motor && string.IsNullOrWhiteSpace(input.VehicleRegistration))
@@ -161,7 +161,8 @@ public class Claim
 
     // ---------------------------------------------------------------- RS-2: reserves
 
-    public void AdjustReserve(string handlerId, decimal newReserve, string reason, DateTimeOffset now)
+    // Parameters are named "amount" to match the request body, so validation errors point at the field the caller sent.
+    public void AdjustReserve(string handlerId, decimal amount, string reason, DateTimeOffset now)
     {
         EnsureAssignedTo(handlerId);
         RequireText(nameof(reason), reason);
@@ -169,31 +170,31 @@ public class Claim
         if (Status is not (ClaimStatus.UnderReview or ClaimStatus.AwaitingInfo))
             throw new ConflictException($"The reserve can only be adjusted while a claim is being assessed (it is {Status}).");
 
-        Money.EnsureValid(nameof(newReserve), newReserve, MinorUnits, allowZero: true);
+        Money.EnsureValid(nameof(amount), amount, MinorUnits, allowZero: true);
 
         var previous = ReserveAmount;
-        ReserveAmount = newReserve;
+        ReserveAmount = amount;
         Raise(ClaimEventType.ReserveAdjusted, handlerId, now, Status, Status,
-            note: reason.Trim(), amount: newReserve, previousAmount: previous, isInternal: true);
+            note: reason.Trim(), amount: amount, previousAmount: previous, isInternal: true);
     }
 
     // ---------------------------------------------------------------- H-7 / H-8 / H-9: decisions
 
-    public void Approve(string handlerId, decimal approvedAmount, string? note, DateTimeOffset now)
+    public void Approve(string handlerId, decimal amount, string? note, DateTimeOffset now)
     {
         EnsureAssignedTo(handlerId);
-        Money.EnsureValid(nameof(approvedAmount), approvedAmount, MinorUnits);
-        if (approvedAmount > ClaimedAmount)
-            throw new DomainValidationException(nameof(approvedAmount), "Approved amount cannot exceed the claimed amount.");
+        Money.EnsureValid(nameof(amount), amount, MinorUnits);
+        if (amount > ClaimedAmount)
+            throw new DomainValidationException(nameof(amount), "Approved amount cannot exceed the claimed amount.");
 
         var from = Status;
         Status = ClaimStateMachine.Apply(Status, ClaimAction.Approve);
         var previousReserve = ReserveAmount;
-        ApprovedAmount = approvedAmount;
-        ReserveAmount = approvedAmount; // RS-3
+        ApprovedAmount = amount;
+        ReserveAmount = amount; // RS-3
         DecidedAt = now;
         Raise(ClaimEventType.Approved, handlerId, now, from, Status,
-            note: note?.Trim(), amount: approvedAmount, previousAmount: previousReserve);
+            note: note?.Trim(), amount: amount, previousAmount: previousReserve);
     }
 
     public void Reject(string handlerId, string reason, DateTimeOffset now)
@@ -247,10 +248,15 @@ public class Claim
             throw new ForbiddenException("Only the handler assigned to this claim can do that.");
     }
 
+    /// <summary>Longest free text accepted anywhere on a claim (questions, replies, reasons, notes).</summary>
+    public const int MaxTextLength = 1000; // the smallest text column (RejectionReason)
+
     private static void RequireText(string field, string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new DomainValidationException(field, "This field is required.");
+        if (value.Trim().Length > MaxTextLength)
+            throw new DomainValidationException(field, $"Please keep this under {MaxTextLength} characters.");
     }
 
     private void Raise(ClaimEventType type, string actorId, DateTimeOffset now, ClaimStatus? from, ClaimStatus? to,

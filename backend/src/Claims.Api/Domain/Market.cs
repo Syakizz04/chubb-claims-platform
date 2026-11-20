@@ -10,6 +10,11 @@ public class Market
     public required string Name { get; init; }
     public required string CurrencyCode { get; init; }  // ISO 4217, e.g. "SGD"
     public required int MinorUnits { get; init; }
+    public required string TimeZoneId { get; init; }    // IANA, e.g. "Asia/Singapore"
+
+    /// <summary>Today's date where the claimant is, not in UTC (a 00:30 KST incident is "today" in Seoul).</summary>
+    public DateOnly LocalDate(DateTimeOffset now) =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId)).DateTime);
 }
 
 /// <summary>Per-market counter used to build claim references like CLM-SG-000123 (DR-4).</summary>

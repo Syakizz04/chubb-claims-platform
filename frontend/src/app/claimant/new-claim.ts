@@ -55,31 +55,31 @@ import { ClaimType, Problem } from '../core/models';
           <div class="form-grid">
             <div class="field">
               <label for="date">Date of incident</label>
-              <input id="date" type="date" class="input" formControlName="incidentDate" [max]="today" [attr.aria-invalid]="invalid('incidentDate')" />
+              <input id="date" type="date" class="input" formControlName="incidentDate" [max]="today()" [attr.aria-invalid]="invalid('incidentDate')" />
               @if (err('incidentDate'); as e) { <span class="error">{{ e }}</span> }
             </div>
             <div class="field">
               <label for="location">Where did it happen?</label>
-              <input id="location" class="input" formControlName="incidentLocation" placeholder="Street, area or landmark"
+              <input id="location" class="input" maxlength="200" formControlName="incidentLocation" placeholder="Street, area or landmark"
                      [attr.aria-invalid]="invalid('incidentLocation')" />
               @if (err('incidentLocation'); as e) { <span class="error">{{ e }}</span> }
             </div>
             @if (type() === 'Motor') {
               <div class="field">
                 <label for="reg">Vehicle registration</label>
-                <input id="reg" class="input" formControlName="vehicleRegistration" autocomplete="off" [attr.aria-invalid]="invalid('vehicleRegistration')" />
+                <input id="reg" class="input" maxlength="20" formControlName="vehicleRegistration" autocomplete="off" [attr.aria-invalid]="invalid('vehicleRegistration')" />
                 @if (err('vehicleRegistration'); as e) { <span class="error">{{ e }}</span> }
               </div>
             } @else {
               <div class="field full">
                 <label for="addr">Property address</label>
-                <input id="addr" class="input" formControlName="propertyAddress" autocomplete="street-address" [attr.aria-invalid]="invalid('propertyAddress')" />
+                <input id="addr" class="input" maxlength="300" formControlName="propertyAddress" autocomplete="street-address" [attr.aria-invalid]="invalid('propertyAddress')" />
                 @if (err('propertyAddress'); as e) { <span class="error">{{ e }}</span> }
               </div>
             }
             <div class="field full">
               <label for="desc">Describe what happened</label>
-              <textarea id="desc" class="input" formControlName="description" rows="5"
+              <textarea id="desc" class="input" maxlength="4000" formControlName="description" rows="5"
                         placeholder="What happened, what was damaged, and anyone else involved." [attr.aria-invalid]="invalid('description')"></textarea>
               @if (err('description'); as e) { <span class="error">{{ e }}</span> }
               @else { <span class="hint">At least 20 characters. The more detail, the faster we can help.</span> }
@@ -130,7 +130,6 @@ export class NewClaim {
   private router = inject(Router);
   private fb = inject(FormBuilder);
 
-  readonly today = new Date().toISOString().slice(0, 10);
   readonly busy = signal(false);
   readonly problem = signal<Problem | null>(null);
   readonly submitted = signal(false);
@@ -153,6 +152,9 @@ export class NewClaim {
   readonly currency = computed(() => this.market()?.currencyCode ?? null);
   readonly minorUnits = computed(() => this.market()?.minorUnits ?? 2);
   readonly step = computed(() => (this.minorUnits() === 0 ? '1' : '0.01'));
+  /** Today in the market's own time zone (the server checks the same thing), as yyyy-mm-dd. */
+  readonly today = computed(() =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: this.market()?.timeZoneId }).format(new Date()));
 
   setType(t: ClaimType) { this.form.controls.type.setValue(t); }
 
@@ -170,7 +172,7 @@ export class NewClaim {
         return 'Vehicle registration is required for motor claims.';
       if (name === 'propertyAddress' && this.submitted() && this.type() === 'Property' && !this.form.value.propertyAddress?.trim())
         return 'Property address is required for property claims.';
-      if (name === 'incidentDate' && this.submitted() && c?.value && c.value > this.today) return 'The incident date cannot be in the future.';
+      if (name === 'incidentDate' && this.submitted() && c?.value && c.value > this.today()) return 'The incident date cannot be in the future.';
       return null;
     }
     if (c.errors?.['required']) return 'This field is required.';

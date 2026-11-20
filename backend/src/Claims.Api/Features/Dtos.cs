@@ -9,7 +9,7 @@ namespace Claims.Api.Features;
 
 public record SubmitClaimRequest(
     string MarketCode,
-    ClaimType Type,
+    ClaimType? Type,     // nullable so a missing type is a 400, not a silent default to Motor
     string PolicyNumber,
     DateOnly IncidentDate,
     string IncidentLocation,
@@ -27,7 +27,7 @@ public record AddNoteRequest(string Text);
 
 // ------------------------------------------------------------------ shared
 
-public record MarketDto(string Code, string Name, string CurrencyCode, int MinorUnits);
+public record MarketDto(string Code, string Name, string CurrencyCode, int MinorUnits, string TimeZoneId);
 public record UserDto(string Id, string DisplayName, UserRole Role);
 
 public record TimelineEntryDto(

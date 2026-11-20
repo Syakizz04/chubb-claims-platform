@@ -32,6 +32,7 @@ public class ClaimsDbContext(DbContextOptions<ClaimsDbContext> options) : DbCont
             e.HasKey(m => m.Code);
             e.Property(m => m.Code).HasMaxLength(2);
             e.Property(m => m.CurrencyCode).HasMaxLength(3);
+            e.Property(m => m.TimeZoneId).HasMaxLength(64);
         });
 
         b.Entity<MarketSequence>(e =>

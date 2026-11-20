@@ -5,8 +5,8 @@ namespace Claims.Tests.Domain;
 public class ClaimTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 20, 9, 0, 0, TimeSpan.Zero);
-    private static readonly Market Sg = new() { Code = "SG", Name = "Singapore", CurrencyCode = "SGD", MinorUnits = 2 };
-    private static readonly Market Kr = new() { Code = "KR", Name = "South Korea", CurrencyCode = "KRW", MinorUnits = 0 };
+    private static readonly Market Sg = new() { Code = "SG", Name = "Singapore", CurrencyCode = "SGD", MinorUnits = 2, TimeZoneId = "Asia/Singapore" };
+    private static readonly Market Kr = new() { Code = "KR", Name = "South Korea", CurrencyCode = "KRW", MinorUnits = 0, TimeZoneId = "Asia/Seoul" };
 
     private const string Claimant = "claimant-sg";
     private const string Handler = "handler-1";
@@ -235,5 +235,53 @@ public class ClaimTests
 
         Assert.Equal([1, 2, 3, 4, 5, 6], c.Events.Select(e => e.Sequence));
         Assert.Equal(6, c.LastEventSequence);
+    }
+
+    // ---------------------------------------------------------------- QA fixes
+
+    [Fact]
+    public void Incident_date_is_checked_against_the_markets_local_date_not_utc()
+    {
+        // 00:30 in Seoul on 21 Nov is still 20 Nov in UTC. An incident "today" in Seoul must be accepted.
+        var justAfterMidnightKst = new DateTimeOffset(2026, 11, 20, 15, 30, 0, TimeSpan.Zero);
+        var today = new DateOnly(2026, 11, 21);
+        var input = Motor() with { IncidentDate = today, ClaimedAmount = 1_000_000m };
+
+        var claim = Claim.Submit("CLM-KR-000001", Kr, "claimant-kr", input, justAfterMidnightKst);
+        Assert.Equal(today, claim.IncidentDate);
+
+        // ...but the next day is still in the future.
+        var ex = Assert.Throws<DomainValidationException>(() =>
+            Claim.Submit("CLM-KR-000002", Kr, "claimant-kr", input with { IncidentDate = today.AddDays(1) }, justAfterMidnightKst));
+        Assert.Equal("IncidentDate", ex.Field);
+    }
+
+    [Fact]
+    public void Amounts_above_the_storable_maximum_are_a_validation_error()
+    {
+        var ex = Assert.Throws<DomainValidationException>(() =>
+            Claim.Submit("CLM-SG-000001", Sg, "claimant-sg", Motor() with { ClaimedAmount = Money.MaxAmount + 1 }, Now));
+        Assert.Equal("ClaimedAmount", ex.Field);
+    }
+
+    [Fact]
+    public void Free_text_over_the_limit_is_a_validation_error_on_that_field()
+    {
+        var claim = Submitted();
+        claim.PickUp(HandlerUser, Now);
+
+        var ex = Assert.Throws<DomainValidationException>(() =>
+            claim.Reject(Handler, new string('x', Claim.MaxTextLength + 1), Now));
+        Assert.Equal("reason", ex.Field);
+    }
+
+    [Fact]
+    public void Amount_errors_use_the_request_field_name()
+    {
+        var claim = Submitted();
+        claim.PickUp(HandlerUser, Now);
+
+        Assert.Equal("amount", Assert.Throws<DomainValidationException>(() => claim.AdjustReserve(Handler, -1m, "x", Now)).Field);
+        Assert.Equal("amount", Assert.Throws<DomainValidationException>(() => claim.Approve(Handler, 999_999m, null, Now)).Field);
     }
 }

@@ -13,8 +13,8 @@ namespace Claims.Tests.Domain;
 public class ClaimPropertyTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
-    private static readonly Market Sg = new() { Code = "SG", Name = "Singapore", CurrencyCode = "SGD", MinorUnits = 2 };
-    private static readonly Market Kr = new() { Code = "KR", Name = "South Korea", CurrencyCode = "KRW", MinorUnits = 0 };
+    private static readonly Market Sg = new() { Code = "SG", Name = "Singapore", CurrencyCode = "SGD", MinorUnits = 2, TimeZoneId = "Asia/Singapore" };
+    private static readonly Market Kr = new() { Code = "KR", Name = "South Korea", CurrencyCode = "KRW", MinorUnits = 0, TimeZoneId = "Asia/Seoul" };
 
     // ------------------------------------------------------------------ money (DR-3)
 

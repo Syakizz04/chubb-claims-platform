@@ -19,7 +19,7 @@ public partial class ClaimCommands(ClaimRepository repo, TimeProvider clock)
         var reference = await repo.NextReferenceAsync(market.Code, ct);
 
         var claim = Claim.Submit(reference, market, claimantId, new Claim.NewClaim(
-            req.Type, req.PolicyNumber.ToUpperInvariant(), req.IncidentDate, req.IncidentLocation, req.Description,
+            req.Type!.Value, req.PolicyNumber.ToUpperInvariant(), req.IncidentDate, req.IncidentLocation, req.Description,
             req.ClaimedAmount, req.VehicleRegistration, req.PropertyAddress), Now);
 
         repo.Add(claim);
@@ -76,10 +76,27 @@ public partial class ClaimCommands(ClaimRepository repo, TimeProvider clock)
             if (string.IsNullOrWhiteSpace(value)) errors[field] = ["This field is required."];
         }
 
+        void MaxLength(string field, string? value, int max)
+        {
+            if (!errors.ContainsKey(field) && value is not null && value.Trim().Length > max)
+                errors[field] = [$"Please keep this under {max} characters."];
+        }
+
         Required("marketCode", r.MarketCode);
         Required("policyNumber", r.PolicyNumber);
         Required("incidentLocation", r.IncidentLocation);
         Required("description", r.Description);
+        if (r.Type is null) errors["type"] = ["Choose Motor or Property."];
+
+        // Type-specific fields, reported together with everything else instead of one at a time.
+        if (r.Type == ClaimType.Motor) Required("vehicleRegistration", r.VehicleRegistration);
+        if (r.Type == ClaimType.Property) Required("propertyAddress", r.PropertyAddress);
+
+        // C-2: limits match the column sizes, so oversized input is a 400 on the field, never a database 500.
+        MaxLength("incidentLocation", r.IncidentLocation, 200);
+        MaxLength("description", r.Description, 4000);
+        MaxLength("vehicleRegistration", r.VehicleRegistration, 20);
+        MaxLength("propertyAddress", r.PropertyAddress, 300);
 
         if (!errors.ContainsKey("policyNumber") && !PolicyNumberFormat().IsMatch(r.PolicyNumber))
             errors["policyNumber"] = ["Policy number must be 6–40 letters, digits or dashes."];
@@ -89,6 +106,8 @@ public partial class ClaimCommands(ClaimRepository repo, TimeProvider clock)
 
         if (r.ClaimedAmount <= 0)
             errors["claimedAmount"] = ["Claimed amount must be greater than zero."];
+        else if (r.ClaimedAmount > Money.MaxAmount)
+            errors["claimedAmount"] = ["Amount is too large."];
 
         if (r.IncidentDate == default)
             errors["incidentDate"] = ["This field is required."];
