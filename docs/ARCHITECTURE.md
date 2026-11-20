@@ -72,6 +72,7 @@ Splitting further (separate assessment, notification and policy services) would 
 4. **Idempotent consumer (Insights).** For each message, in one transaction: skip it if `EventId` has already been processed; otherwise record it, upsert the snapshot **only if `Sequence` is newer**, and add a notification. The Kafka offset is committed only after that transaction commits.
    - Together this turns at-least-once delivery into effectively-once processing. It is property-tested with random duplicates and reordering.
 5. **Fault isolation.** Stop Insights and Claims is unaffected. On restart, Insights resumes from its last committed offset. Verified by hand: it processed exactly the one event it had missed.
+6. **Replayable log.** `claims.events` has infinite retention (`retention.ms=-1`, set when the topic is created and re-applied if it already exists). Insights' read model is disposable: drop it, start a new consumer group, and it rebuilds from offset 0. With Kafka's default 7 days, a rebuild would silently miss older claims. At scale: tiered storage, or a compacted snapshot topic alongside the log.
 
 ## Domain model (Claims)
 

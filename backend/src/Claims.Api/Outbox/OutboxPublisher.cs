@@ -116,6 +116,14 @@ public class OutboxPublisher(
         return sent;
     }
 
+    /// <summary>
+    /// Keep claim events forever. Insights is a projection of this topic: a new consumer group (or a
+    /// rebuilt read model) replays from offset 0, so the topic must still hold every event. With
+    /// Kafka's default 7-day retention, a rebuild after a week would silently miss claims.
+    /// At larger scale: tiered storage, or a compacted snapshot topic alongside this log.
+    /// </summary>
+    internal static readonly Dictionary<string, string> TopicConfig = new() { ["retention.ms"] = "-1" };
+
     /// <summary>Topics are created explicitly (auto-create is disabled on the broker).</summary>
     private async Task EnsureTopicAsync(CancellationToken ct)
     {
@@ -124,16 +132,30 @@ public class OutboxPublisher(
             try
             {
                 using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = Bootstrap }).Build();
-                await admin.CreateTopicsAsync(
-                [
-                    // 3 partitions: room for parallel consumers. The claim-id key keeps per-claim order.
-                    new TopicSpecification { Name = Topics.ClaimEvents, NumPartitions = 3, ReplicationFactor = 1 },
-                ]);
-                log.LogInformation("Created Kafka topic {Topic}", Topics.ClaimEvents);
-                return;
-            }
-            catch (CreateTopicsException ex) when (ex.Results.All(r => r.Error.Code == ErrorCode.TopicAlreadyExists))
-            {
+                try
+                {
+                    await admin.CreateTopicsAsync(
+                    [
+                        // 3 partitions: room for parallel consumers. The claim-id key keeps per-claim order.
+                        new TopicSpecification
+                        {
+                            Name = Topics.ClaimEvents, NumPartitions = 3, ReplicationFactor = 1, Configs = TopicConfig,
+                        },
+                    ]);
+                    log.LogInformation("Created Kafka topic {Topic}", Topics.ClaimEvents);
+                }
+                catch (CreateTopicsException ex) when (ex.Results.All(r => r.Error.Code == ErrorCode.TopicAlreadyExists))
+                {
+                    // Topic from an earlier run: make sure it has the retention we rely on (idempotent).
+                    await admin.IncrementalAlterConfigsAsync(new Dictionary<ConfigResource, List<ConfigEntry>>
+                    {
+                        [new ConfigResource { Type = ResourceType.Topic, Name = Topics.ClaimEvents }] =
+                            TopicConfig.Select(c => new ConfigEntry
+                            {
+                                Name = c.Key, Value = c.Value, IncrementalOperation = AlterConfigOpType.Set,
+                            }).ToList(),
+                    });
+                }
                 return;
             }
             catch (Exception ex)

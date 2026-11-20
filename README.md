@@ -177,7 +177,6 @@ The brief puts the backend first, so the depth is there. The frontend covers eve
 **Known gaps worth knowing before you probe:**
 - **Dev identity only.** `X-User-Id` picks a seeded user and both services enforce roles per route. Insights has no user store and never calls Claims, so it takes `X-User-Role` as a claim, the way it would trust a signed JWT. In dev both headers are unsigned and spoofable by design. Production swaps in JWT validation; endpoints and policies stay the same.
 - **FX rates are seeded separately in Insights.** A new market without a rate still shows in local currency, flagged "No rate", and is left out of the USD totals until its rate is added.
-- **Kafka topic uses default retention (7 days).** Rebuilding Insights from scratch after that would be incomplete. A compacted topic is the fix.
 - **The UI polls** every 5–30 seconds instead of receiving pushed updates.
 - **Docker path not yet run**, as noted above.
 

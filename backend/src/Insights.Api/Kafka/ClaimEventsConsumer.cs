@@ -29,7 +29,7 @@ public class ClaimEventsConsumer(IServiceScopeFactory scopes, IConfiguration con
             BootstrapServers = config["Kafka:BootstrapServers"] ?? "localhost:9092",
             GroupId = config["Kafka:GroupId"] ?? "insights",
             EnableAutoCommit = false,
-            AutoOffsetReset = AutoOffsetReset.Earliest, // a new consumer group rebuilds from the start of the topic
+            AutoOffsetReset = AutoOffsetReset.Earliest, // a new consumer group rebuilds from the start of the topic (retention is infinite, see OutboxPublisher)
             AllowAutoCreateTopics = false,
         };
 
