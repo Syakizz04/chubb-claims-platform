@@ -99,3 +99,20 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
 - **Decision:** once the acceptance criteria were agreed and nothing else needed clarifying, I told the AI to build through the phases with a commit per logical step. I review each commit afterwards and log challenges and overrides here.
 - **Why:** the planning gave the AI enough constraints. Approving every file individually would burn the time box.
 - **Not committed:** the brief's `.docx` is kept out of the repo. It's the company's document, not my work.
+
+---
+
+## Session 3: Building the Claims domain (Claude Code)
+
+### 3.1 AI revised its own assumption: reject from AWAITING_INFO
+- **AI said:** while coding the state machine, it found that the agreed rule ("reject only from UNDER_REVIEW, the handler moves it back first") had no action that moves a claim from AWAITING_INFO back to UNDER_REVIEW. A claim whose claimant never replies would be **stuck forever**.
+  - **Options:** add a "withdraw information request" action, or allow rejecting from AWAITING_INFO.
+- **Decision:** allow reject from AWAITING_INFO, closing the open information request. The acceptance criteria were updated to match. _[review this, since it changes something I signed off on]_
+- **Why:** real claims are closed for non-response all the time, and it's one table row instead of a new action, a new endpoint and new tests.
+- **Lesson:** the assumption looked fine on paper and only failed when someone tried to implement it.
+
+### 3.2 Domain design choices worth defending
+- **All rules live on the `Claim` aggregate**, and the state machine is a single lookup table. Unit tests generate *every* (status, action) pair and assert that each one is either in the table or rejected. A guard test fails if someone adds a transition without updating the tests.
+- **Each action emits exactly one `ClaimEvent`, numbered 1, 2, 3… per claim.** That one stream drives the audit trail, the timelines and the Kafka events. The numbering lets Insights ignore duplicates and stale events.
+- **An APPROVED claim still counts as open**, so its reserve stays in exposure until it's settled. The money is owed but not yet paid.
+- **Claimant mismatch returns NotFound, handler mismatch returns Forbidden.** Claimants must not learn that other people's claims exist (C-3). Staff can see all claims but can only act on their own (H-4).

@@ -33,12 +33,13 @@ SUBMITTED ──pick up──▶ UNDER_REVIEW ──approve──▶ APPROVED �
                            ▼   │
                        AWAITING_INFO
 
-UNDER_REVIEW ──reject──▶ REJECTED
+UNDER_REVIEW  ──reject──▶ REJECTED
+AWAITING_INFO ──reject──▶ REJECTED
 ```
 
 - Terminal states: **SETTLED**, **REJECTED**.
-- "Open" means any non-terminal state. Only open claims count towards exposure.
-- A claim can only be rejected from UNDER_REVIEW. To reject a claim that is AWAITING_INFO, the handler first moves it back to review. This keeps the state machine small. It is a documented simplification.
+- "Open" means any non-terminal state. Only open claims count towards exposure. An APPROVED claim is still open, because the money hasn't been paid yet.
+- A claim can be rejected from UNDER_REVIEW or AWAITING_INFO. The second covers a claimant who never responds; without it the claim would be stuck. Any open information request is closed when the claim is rejected.
 
 ### Reserves (drives liability exposure)
 
