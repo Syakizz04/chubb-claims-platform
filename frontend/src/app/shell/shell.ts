@@ -13,7 +13,8 @@ import { Logo } from '../shared/logo';
   template: `
     <header class="bar">
       <div class="inner">
-        <a class="product" [routerLink]="session.home()">
+        <!-- The mark goes "home": your role's start page, or the sign-in page when signed out. -->
+        <a class="product" [routerLink]="session.home()" [attr.aria-label]="'Lantern home' + (session.user() ? '' : ', sign in')">
           <app-logo [size]="26" />
           <span class="name">Lantern</span>
           <span class="region">Claims · Asia Pacific</span>
@@ -39,6 +40,9 @@ import { Logo } from '../shared/logo';
             }
           </select>
         </label>
+        @if (session.user()) {
+          <button type="button" class="signout" (click)="signOut()">Sign out</button>
+        }
       </div>
     </header>
 
@@ -66,12 +70,21 @@ import { Logo } from '../shared/logo';
       min-height: 2.25rem; padding: 0 0.5rem; font: inherit; font-size: var(--step--1); max-width: 14rem;
     }
     select:focus-visible { outline: 2px solid #3fc4ba; outline-offset: 1px; }
+    .signout {
+      background: none; border: 1px solid transparent; color: #c9ced6; font: inherit; font-size: var(--step--1);
+      min-height: 2.25rem; padding: 0 0.625rem; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
+      transition: color 150ms var(--ease), border-color 150ms var(--ease);
+    }
+    .signout:hover { color: #fff; border-color: #3a404b; }
+    .signout:focus-visible { outline: 2px solid #3fc4ba; outline-offset: 1px; }
     @media (max-width: 720px) {
       /* Two rows on phones: product + user switcher, then the role's navigation. */
       .inner { flex-wrap: wrap; height: auto; gap: 0 1rem; padding: 0.5rem 1rem 0; }
       .product { order: 1; flex: 1; }
       .switcher { order: 2; }
-      nav { order: 3; flex-basis: 100%; margin: 0 -0.75rem; }
+      .signout { order: 4; padding: 0 0.375rem; align-self: center; }
+      /* Row 2: the role's navigation, with Sign out at its right end. */
+      nav { order: 3; flex: 1 1 calc(100% - 6.5rem); min-width: 0; margin-left: -0.75rem; }
       nav a { height: 2.75rem; }
       .region { display: none; }
       select { max-width: 11rem; }
@@ -97,6 +110,11 @@ export class Shell {
       role, label: labels[role], users: this.session.users().filter(u => u.role === role),
     }));
   });
+
+  signOut() {
+    this.session.signOut();
+    this.router.navigateByUrl('/');
+  }
 
   switchUser(id: string) {
     this.session.switchTo(id);

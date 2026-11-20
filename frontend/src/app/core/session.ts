@@ -21,6 +21,12 @@ export class Session {
     try { localStorage.setItem(STORAGE_KEY, id); } catch { /* storage unavailable: session-only */ }
   }
 
+  /** Back to the sign-in page. With real auth this would also end the OIDC session. */
+  signOut() {
+    this.userId.set(null);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+  }
+
   /** Where each role lands. */
   home(): string {
     switch (this.role()) {
