@@ -1,14 +1,15 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { AgoPipe, MoneyPipe } from '../core/format';
 import { MarketTag, StatusPill } from '../shared/status';
 import { live } from '../shared/live';
+import { PAGE_SIZE, Pager, pageOf } from '../shared/pager';
 
 @Component({
   selector: 'app-my-claims',
-  imports: [RouterLink, DatePipe, MoneyPipe, AgoPipe, StatusPill, MarketTag],
+  imports: [RouterLink, DatePipe, MoneyPipe, AgoPipe, StatusPill, MarketTag, Pager],
   template: `
     <div class="page">
       <div class="page-head">
@@ -61,18 +62,7 @@ import { live } from '../shared/live';
                 </tbody>
               </table>
             </div>
-            @if (pageCount() > 1) {
-              <nav class="pager" aria-label="Claims pages">
-                <span class="small muted">{{ firstShown() }}–{{ lastShown() }} of {{ total() }}</span>
-                <div class="pages">
-                  <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="go(page() - 1)" aria-label="Previous page">‹ Prev</button>
-                  @for (p of pages(); track p) {
-                    <button type="button" class="btn btn-secondary btn-sm" [class.current]="p === page()" [attr.aria-current]="p === page() ? 'page' : null" (click)="go(p)">{{ p }}</button>
-                  }
-                  <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === pageCount()" (click)="go(page() + 1)" aria-label="Next page">Next ›</button>
-                </div>
-              </nav>
-            }
+            <app-pager [total]="total()" [(page)]="page" label="Claims pages" />
           }
         </section>
 
@@ -124,10 +114,6 @@ import { live } from '../shared/live';
     .update .msg { line-height: 1.4; }
     .none { padding: 1rem 0.75rem; }
 
-    .pager { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.75rem 1rem; border-top: 1px solid var(--line); }
-    .pages { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-    .btn-sm { min-height: 2rem; padding: 0 0.625rem; font-size: var(--step--1); }
-    .pages .btn.current { background: var(--ink); color: #fff; border-color: var(--ink); }
 
     @media (max-width: 960px) {
       .layout { grid-template-columns: minmax(0, 1fr); }
@@ -145,16 +131,11 @@ export class MyClaims {
   readonly notifications = live(() => this.api.notifications(), 15_000);
   readonly actionNeeded = computed(() => (this.claims.value() ?? []).filter(c => c.actionRequired));
 
-  // ---- pagination (10 per page, shown only when there are more than 10)
-  static readonly PageSize = 10;
+  // ---- pagination (10 per page, pager shown only when there are more than 10)
   readonly page = signal(1);
   readonly total = computed(() => this.claims.value()?.length ?? 0);
-  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / MyClaims.PageSize)));
-  readonly pages = computed(() => Array.from({ length: this.pageCount() }, (_, i) => i + 1));
-  readonly firstShown = computed(() => (this.page() - 1) * MyClaims.PageSize + 1);
-  readonly lastShown = computed(() => Math.min(this.page() * MyClaims.PageSize, this.total()));
-  readonly pageClaims = computed(() =>
-    (this.claims.value() ?? []).slice(this.firstShown() - 1, this.lastShown()));
+  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
+  readonly pageClaims = computed(() => pageOf(this.claims.value() ?? [], this.page()));
 
   // ---- updates synced to the visible page
   readonly hovered = signal<string | null>(null);
@@ -163,12 +144,6 @@ export class MyClaims {
     return (this.notifications.value() ?? []).filter(n => ids.has(n.claimId));
   });
 
-  constructor() {
-    // If the list shrinks under the current page (polling), stay on a real page.
-    effect(() => { if (this.page() > this.pageCount()) this.page.set(this.pageCount()); });
-  }
-
-  go(p: number) { this.page.set(Math.min(Math.max(1, p), this.pageCount())); }
 
   open(id: string) { this.router.navigate(['/my-claims', id]); }
 }

@@ -1,15 +1,16 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { Api, problemMessage, toProblem } from '../core/api';
 import { ClaimType } from '../core/models';
 import { Session } from '../core/session';
 import { live } from '../shared/live';
 import { ClaimTable } from './claim-table';
+import { Pager, pageOf } from '../shared/pager';
 
 /** H-1 / H-2: unassigned claims, oldest first, with market and type filters. */
 @Component({
   selector: 'app-queue',
-  imports: [ClaimTable],
+  imports: [ClaimTable, Pager],
   template: `
     <div class="page">
       <div class="page-head">
@@ -49,7 +50,8 @@ import { ClaimTable } from './claim-table';
             <p>{{ market() || type() ? 'Try all markets or both claim types.' : 'New claims appear here as soon as claimants submit them.' }}</p>
           </div>
         } @else {
-          <app-claim-table [claims]="filtered()" [actionLabel]="isHandler() ? 'Pick up' : null" [busyId]="busyId()" (act)="pickUp($event)" />
+          <app-claim-table [claims]="pageClaims()" [actionLabel]="isHandler() ? 'Pick up' : null" [busyId]="busyId()" (act)="pickUp($event)" />
+          <app-pager [total]="filtered().length" [(page)]="page" label="Incoming claims pages" />
         }
       </section>
       <p class="small muted foot">{{ filtered().length }} waiting · refreshes every 10 seconds</p>
@@ -78,6 +80,15 @@ export class Queue {
   readonly filtered = computed(() => (this.queue.value() ?? [])
     .filter(c => !this.market() || c.marketCode === this.market())
     .filter(c => !this.type() || c.type === this.type()));
+
+  // 10 per page; the oldest (most urgent) claims stay on page 1.
+  readonly page = signal(1);
+  readonly pageClaims = computed(() => pageOf(this.filtered(), this.page()));
+
+  constructor() {
+    // A new filter starts from page 1.
+    effect(() => { this.market(); this.type(); untracked(() => this.page.set(1)); });
+  }
 
   pickUp(id: string) {
     this.busyId.set(id);

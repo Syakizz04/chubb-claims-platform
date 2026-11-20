@@ -1,7 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { Session } from '../core/session';
 import { live } from '../shared/live';
 import { ClaimTable } from './claim-table';
 
@@ -14,7 +13,7 @@ import { ClaimTable } from './claim-table';
       <div class="page-head">
         <div>
           <h1>My work</h1>
-          <p>{{ session.user()?.displayName }}: your open claims, oldest first.</p>
+          <p>Your open claims, oldest first.</p>
         </div>
         <a class="btn" routerLink="/queue">Incoming{{ queueCount() !== null ? ' (' + queueCount() + ')' : '' }}</a>
       </div>
@@ -69,7 +68,6 @@ import { ClaimTable } from './claim-table';
 })
 export class Work {
   private api = inject(Api);
-  readonly session = inject(Session);
 
   readonly claims = live(() => this.api.assignedToMe(), 15_000);
   private readonly queue = live(() => this.api.queue(), 30_000);
