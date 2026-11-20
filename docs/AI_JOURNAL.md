@@ -86,7 +86,16 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
 ### 2.4 Commit attribution
 - **Decision:** commits go under my own git identity with no AI co-author trailer. AI use is disclosed in full in this journal instead.
 
-### 2.5 Letting the AI execute
+### 2.5 Overrode: Malaysia replaces Indonesia
+- **Context:** in session 1 I had already decided to swap Indonesia for Malaysia, but that wasn't in the reconstructed notes, so the acceptance criteria went out with ID/IDR.
+- **Decision:** Overrode. The markets are now **KR, HK, TW, TH, MY, SG**.
+- **Why:** Malaysia (MYR) is a Chubb APAC market and replaces Indonesia. Because markets are seeded data, this is a one-row change, which also shows the "config, not code" design works. The currency spread is still good: KRW has 0 decimals, everything else has 2.
+
+### 2.6 How currency is displayed
+- **Decision:** each market's exposure is shown **in its own currency**, formatted with its symbol and decimal places. **USD is the main headline total**, and each market also shows its USD equivalent.
+- **Why:** local currency is what is actually owed; USD is how Chubb reports at group level. Managers need both, with USD as the figure they read first. This tightens M-1 and M-2.
+
+### 2.7 Letting the AI execute
 - **Decision:** once the acceptance criteria were agreed and nothing else needed clarifying, I told the AI to build through the phases with a commit per logical step. I review each commit afterwards and log challenges and overrides here.
 - **Why:** the planning gave the AI enough constraints. Approving every file individually would burn the time box.
 - **Not committed:** the brief's `.docx` is kept out of the repo. It's the company's document, not my work.

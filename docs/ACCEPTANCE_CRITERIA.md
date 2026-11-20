@@ -15,7 +15,7 @@ The brief is deliberately underspecified. These criteria are my interpretation o
 
 | ID | Priority | Criterion |
 |---|---|---|
-| DR-1 | P0 | Markets are **seeded data, not an enum**: KR/KRW, HK/HKD, TW/TWD, TH/THB, ID/IDR, SG/SGD. Each market stores its ISO 4217 currency and its number of decimal places (KRW = 0, all others = 2). Adding a market is a data change, not a code change. |
+| DR-1 | P0 | Markets are **seeded data, not an enum**: KR/KRW, HK/HKD, TW/TWD, TH/THB, MY/MYR, SG/SGD. Each market stores its ISO 4217 currency and its number of decimal places (KRW = 0, all others = 2). Adding a market is a data change, not a code change. |
 | DR-2 | P0 | A claim's currency is **derived from its market** and is never supplied by the client. |
 | DR-3 | P0 | Money is stored as `decimal`, never float or double, always in the claim's original currency. An amount with more decimal places than its currency allows is rejected (e.g. `1000.5` KRW → 400). |
 | DR-4 | P0 | Every claim gets a unique, human-readable reference `CLM-{market}-{6-digit sequence}`, e.g. `CLM-SG-000123`. |
@@ -90,8 +90,8 @@ All manager views are served by the **Insights service**, built from Kafka event
 
 | ID | Priority | Criterion |
 |---|---|---|
-| M-1 | P0 | **Outstanding exposure.** The sum of reserves on open claims, **per currency**, broken down by market and claim type. |
-| M-2 | P0 | **Indicative USD total.** One headline figure converted at **static seeded FX rates**, clearly labelled "indicative, rates as of {date}". The USD figure is calculated when it is read and is **never stored**. |
+| M-1 | P0 | **Outstanding exposure.** The sum of reserves on open claims, broken down by market and claim type. Each market's figure is **displayed in that market's own currency**, formatted with its symbol and decimal places (e.g. ₩12,500,000 · RM 8,200.00). |
+| M-2 | P0 | **USD as the main total.** The headline exposure figure is in **USD** (Chubb's reporting currency), and each market also shows its USD equivalent next to its local figure. Converted at **static seeded FX rates**, clearly labelled "indicative, rates as of {date}". The USD figure is calculated when it is read and is **never stored**. |
 | M-3 | P0 | **Team workload.** For each handler: open claims, how many are awaiting info, and the age of their oldest open claim. Also the unassigned queue size and the age of the oldest unassigned claim. |
 | M-4 | P1 | **Ageing.** Open claims grouped into 0–7, 8–30 and 31+ days since submission. |
 | M-5 | P1 | **Performance.** For each handler: claims closed in the last 30 days and the average time from submission to decision. |
