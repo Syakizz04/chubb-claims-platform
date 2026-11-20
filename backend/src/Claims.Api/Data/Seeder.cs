@@ -55,6 +55,7 @@ public class Seeder(ClaimsDbContext db, ClaimRepository repo, TimeProvider clock
     private async Task SeedDemoClaimsAsync(CancellationToken ct)
     {
         var now = clock.GetUtcNow();
+        User U(string id) => Users.Single(u => u.Id == id);
         DateTimeOffset Ago(double days) => now.AddDays(-days);
 
         async Task<Claim> Submit(string market, string claimant, ClaimType type, decimal amount, double daysAgo, string description, string location)
@@ -85,35 +86,35 @@ public class Seeder(ClaimsDbContext db, ClaimRepository repo, TimeProvider clock
 
         // In progress with handlers.
         var my = await Submit("MY", "claimant-my", ClaimType.Motor, 9_800.00m, 12, "Collision at a roundabout; front-left wheel and suspension damaged.", "Petaling Jaya, Selangor");
-        await Step(my, c => c.PickUp("handler-1", Ago(11)));
+        await Step(my, c => c.PickUp(U("handler-1"), Ago(11)));
         await Step(my, c => c.AdjustReserve("handler-1", 8_500.00m, "Workshop quote received", Ago(9)));
 
         var th = await Submit("TH", "claimant-th", ClaimType.Property, 120_000.00m, 20, "Storm damage to roof tiles and water ingress into the bedroom.", "Chatuchak, Bangkok");
-        await Step(th, c => c.PickUp("handler-1", Ago(18)));
+        await Step(th, c => c.PickUp(U("handler-1"), Ago(18)));
         await Step(th, c => c.RequestInformation("handler-1", "Please provide photos of the roof damage and the contractor's quote.", Ago(15)));
 
         var tw = await Submit("TW", "claimant-tw", ClaimType.Motor, 95_000.00m, 9, "Scooter collided with my car at a junction; rear quarter panel dented.", "Da'an District, Taipei");
-        await Step(tw, c => c.PickUp("handler-2", Ago(8)));
+        await Step(tw, c => c.PickUp(U("handler-2"), Ago(8)));
 
         var thOld = await Submit("TH", "claimant-th", ClaimType.Motor, 45_000.00m, 45, "Hit a pothole at speed; two tyres and a rim damaged.", "Sukhumvit Road, Bangkok");
-        await Step(thOld, c => c.PickUp("handler-2", Ago(44)));
+        await Step(thOld, c => c.PickUp(U("handler-2"), Ago(44)));
         await Step(thOld, c => c.RequestInformation("handler-2", "Please send the police report reference for the incident.", Ago(40)));
 
         var myProp = await Submit("MY", "claimant-my", ClaimType.Property, 22_000.00m, 3, "Break-in at home; laptop, jewellery and a television were stolen.", "Mont Kiara, Kuala Lumpur");
-        await Step(myProp, c => c.PickUp("handler-3", Ago(2)));
+        await Step(myProp, c => c.PickUp(U("handler-3"), Ago(2)));
 
         // Decided.
         var sg = await Submit("SG", "claimant-sg", ClaimType.Property, 18_500.00m, 35, "Kitchen fire damaged the hob, cabinets and ceiling.", "Tampines, Singapore");
-        await Step(sg, c => c.PickUp("handler-2", Ago(34)));
+        await Step(sg, c => c.PickUp(U("handler-2"), Ago(34)));
         await Step(sg, c => c.Approve("handler-2", 17_000.00m, "Approved per loss adjuster report", Ago(10)));
 
         var kr = await Submit("KR", "claimant-kr", ClaimType.Property, 12_000_000m, 40, "Typhoon damage to balcony windows and flooring.", "Haeundae-gu, Busan");
-        await Step(kr, c => c.PickUp("handler-3", Ago(39)));
+        await Step(kr, c => c.PickUp(U("handler-3"), Ago(39)));
         await Step(kr, c => c.Approve("handler-3", 11_000_000m, "Excess deducted", Ago(25)));
         await Step(kr, c => c.Settle("handler-3", Ago(20)));
 
         var hk = await Submit("HK", "claimant-hk", ClaimType.Motor, 15_000.00m, 25, "Minor scrape in a car park; paintwork on rear bumper.", "Causeway Bay, Hong Kong");
-        await Step(hk, c => c.PickUp("handler-3", Ago(24)));
+        await Step(hk, c => c.PickUp(U("handler-3"), Ago(24)));
         await Step(hk, c => c.Reject("handler-3", "Damage pre-dates the policy start date per inspection report.", Ago(18)));
 
         log.LogInformation("Seeded demo claims");

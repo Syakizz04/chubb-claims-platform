@@ -116,3 +116,21 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
 - **Each action emits exactly one `ClaimEvent`, numbered 1, 2, 3… per claim.** That one stream drives the audit trail, the timelines and the Kafka events. The numbering lets Insights ignore duplicates and stale events.
 - **An APPROVED claim still counts as open**, so its reserve stays in exposure until it's settled. The money is owed but not yet paid.
 - **Claimant mismatch returns NotFound, handler mismatch returns Forbidden.** Claimants must not learn that other people's claims exist (C-3). Staff can see all claims but can only act on their own (H-4).
+
+### 3.3 Hypothesis replaced with FsCheck
+- **Asked:** write unit tests, and use Hypothesis wherever property-based testing would improve them.
+- **AI said:** Hypothesis is Python-only and can't run in a .NET test suite. It proposed **FsCheck**, the .NET counterpart: random input generation plus shrinking failures to a minimal example.
+- **Decision:** Accepted the substitution.
+- **Why:** same technique, right ecosystem. Properties chosen where hand-picked examples are weakest:
+  - **Money precision:** any amount within the currency's decimal places is valid; one extra decimal place is invalid.
+  - **Lifecycle:** 300 random sequences of actions by random users, with invariants checked after every step:
+    - reserve ≥ 0, and 0 once the claim is closed
+    - approved ≤ claimed
+    - an open question exists exactly when the claim is AWAITING_INFO
+    - the audit trail has no gaps and replays to the current status
+    - **a rejected action leaves the claim completely unchanged**
+
+### 3.4 Property test found a real bug
+- **What happened:** on its 6th random run, FsCheck found that a **claimant could pick up a claim and become its handler**. The `Claim` aggregate trusted whoever called it; only the HTTP `Handler` policy blocked this.
+- **Decision:** fixed it in the domain. `PickUp` now takes a `User` and requires the Handler role.
+- **Why:** business rules shouldn't depend on which entry point is used. A background job, script or future endpoint would have bypassed the HTTP policy. The example-based tests all used valid handlers, so they never could have caught this. That's the argument for property-based testing.

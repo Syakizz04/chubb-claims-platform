@@ -43,6 +43,9 @@ public class ClaimRepository(ClaimsDbContext db)
         return $"CLM-{marketCode}-{next.Single():D6}";
     }
 
+    public async Task<User> GetUserAsync(string id, CancellationToken ct) =>
+        await db.Users.FindAsync([id], ct) ?? throw new ForbiddenException($"Unknown user '{id}'.");
+
     public void Add(Claim claim) => db.Claims.Add(claim);
 
     /// <summary>Persists the claim, its new events and their outbox rows atomically.</summary>

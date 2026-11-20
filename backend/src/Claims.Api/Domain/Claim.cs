@@ -109,12 +109,17 @@ public class Claim
 
     // ---------------------------------------------------------------- H-2: pick up
 
-    public void PickUp(string handlerId, DateTimeOffset now)
+    public void PickUp(User handler, DateTimeOffset now)
     {
+        // Enforced here, not only by the HTTP policy, so no caller (job, script, future endpoint)
+        // can assign a claim to a non-handler. Found by a property-based test.
+        if (handler.Role != UserRole.Handler)
+            throw new ForbiddenException("Only claims handlers can pick up claims.");
+
         var from = Status;
         Status = ClaimStateMachine.Apply(Status, ClaimAction.PickUp);
-        AssignedHandlerId = handlerId;
-        Raise(ClaimEventType.PickedUp, handlerId, now, from, Status);
+        AssignedHandlerId = handler.Id;
+        Raise(ClaimEventType.PickedUp, handler.Id, now, from, Status);
     }
 
     // ---------------------------------------------------------------- H-5 / C-5: information loop

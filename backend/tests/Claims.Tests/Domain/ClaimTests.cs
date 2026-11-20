@@ -10,6 +10,7 @@ public class ClaimTests
 
     private const string Claimant = "claimant-sg";
     private const string Handler = "handler-1";
+    private static readonly User HandlerUser = new() { Id = Handler, DisplayName = "Priya", Role = UserRole.Handler };
     private const string OtherHandler = "handler-2";
 
     private static Claim.NewClaim Motor(decimal amount = 4200.00m, DateOnly? incident = null) => new(
@@ -22,7 +23,7 @@ public class ClaimTests
     private static Claim UnderReview()
     {
         var c = Submitted();
-        c.PickUp(Handler, Now);
+        c.PickUp(HandlerUser, Now);
         return c;
     }
 
@@ -102,6 +103,16 @@ public class ClaimTests
         var c = UnderReview();
         Assert.Equal(ClaimStatus.UnderReview, c.Status);
         Assert.Equal(Handler, c.AssignedHandlerId);
+    }
+
+    [Theory]
+    [InlineData(UserRole.Claimant)]
+    [InlineData(UserRole.Manager)]
+    public void Only_handlers_can_pick_up(UserRole role)
+    {
+        var c = Submitted();
+        Assert.Throws<ForbiddenException>(() => c.PickUp(new User { Id = "x", DisplayName = "X", Role = role }, Now));
+        Assert.Equal(ClaimStatus.Submitted, c.Status);
     }
 
     [Fact]

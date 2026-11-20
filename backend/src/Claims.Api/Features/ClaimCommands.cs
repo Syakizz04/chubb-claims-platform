@@ -27,8 +27,11 @@ public partial class ClaimCommands(ClaimRepository repo, TimeProvider clock)
         return claim;
     }
 
-    public Task PickUpAsync(Guid id, string handlerId, CancellationToken ct) =>
-        Execute(id, c => c.PickUp(handlerId, Now), ct);
+    public async Task PickUpAsync(Guid id, string handlerId, CancellationToken ct)
+    {
+        var handler = await repo.GetUserAsync(handlerId, ct);
+        await Execute(id, c => c.PickUp(handler, Now), ct);
+    }
 
     public Task RequestInformationAsync(Guid id, string handlerId, string question, CancellationToken ct) =>
         Execute(id, c => c.RequestInformation(handlerId, question, Now), ct);
