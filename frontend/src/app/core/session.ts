@@ -37,6 +37,13 @@ function readStored(): string | null {
 }
 
 export const devIdentityInterceptor: HttpInterceptorFn = (req, next) => {
-  const id = inject(Session).userId();
-  return next(id ? req.clone({ setHeaders: { 'X-User-Id': id } }) : req);
+  const session = inject(Session);
+  const id = session.userId();
+  if (!id) return next(req);
+  const headers: Record<string, string> = { 'X-User-Id': id };
+  // Insights has no user store, so it takes the role as a claim, as it would from a JWT.
+  // Claims looks the role up itself and ignores this header.
+  const role = session.role();
+  if (role && req.url.startsWith('/api/insights')) headers['X-User-Role'] = role;
+  return next(req.clone({ setHeaders: headers }));
 };

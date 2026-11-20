@@ -78,7 +78,7 @@ This starts Postgres, Kafka, both services and the frontend (behind nginx) on th
 |---|---|
 | http://localhost:4200 | The app. Pick a role on the welcome screen. |
 | http://localhost:5001/swagger | Claims API. Use *Authorize* with a user id such as `handler-1`. |
-| http://localhost:5002/swagger | Insights API (dashboards, notifications) |
+| http://localhost:5002/swagger | Insights API (dashboards, notifications). *Authorize* with `manager-1` + `Manager`. |
 
 ---
 
@@ -175,7 +175,7 @@ The brief puts the backend first, so the depth is there. The frontend covers eve
 **Not built (on purpose):** real authentication, document upload, policy and coverage checks, payments, live FX rates, email and SMS, reassigning claims, claimant withdrawal. Each has a production approach in [ACCEPTANCE_CRITERIA §8](docs/ACCEPTANCE_CRITERIA.md) and [ARCHITECTURE: Production next steps](docs/ARCHITECTURE.md#production-next-steps).
 
 **Known gaps worth knowing before you probe:**
-- **Dev identity only.** `X-User-Id` picks a seeded user. Claims enforces roles per route, but **the Insights API has no auth yet**, so anyone who can reach it can read the dashboard.
+- **Dev identity only.** `X-User-Id` picks a seeded user and both services enforce roles per route. Insights has no user store and never calls Claims, so it takes `X-User-Role` as a claim, the way it would trust a signed JWT. In dev both headers are unsigned and spoofable by design. Production swaps in JWT validation; endpoints and policies stay the same.
 - **FX rates are seeded separately in Insights.** A new market without a rate still shows in local currency, flagged "No rate", and is left out of the USD totals until its rate is added.
 - **Kafka topic uses default retention (7 days).** Rebuilding Insights from scratch after that would be incomplete. A compacted topic is the fix.
 - **The UI polls** every 5–30 seconds instead of receiving pushed updates.
