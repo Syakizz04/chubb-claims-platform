@@ -85,7 +85,7 @@ public class ClaimRepository(ClaimsDbContext db)
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (Exception ex) when (IsConcurrentWrite(ex))
         {
             // DR-7 / H-2: someone else changed this claim between our read and our write.
             throw new ConflictException("This claim was changed by someone else. Refresh and try again.");
@@ -93,6 +93,16 @@ public class ClaimRepository(ClaimsDbContext db)
 
         claim.MarkEventsCommitted();
     }
+
+    /// <summary>
+    /// Two writers that loaded the same claim both try to append event N+1. Depending on statement
+    /// order, Postgres reports the loser either through the xmin token (DbUpdateConcurrencyException)
+    /// or through the unique (ClaimId, Sequence) index (23505). Both mean the same thing: lost race → 409.
+    /// </summary>
+    private static bool IsConcurrentWrite(Exception ex) =>
+        ex is DbUpdateConcurrencyException
+        || ex is DbUpdateException { InnerException: Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation } pg }
+           && pg.ConstraintName == "IX_ClaimEvents_ClaimId_Sequence";
 
     /// <summary>
     /// Builds the integration event. The snapshot reflects the claim's state after this event; we
