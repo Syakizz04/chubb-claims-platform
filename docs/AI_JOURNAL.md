@@ -195,3 +195,26 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
 - **Challenged:** for retention, compaction vs infinite. Chose infinite, because notifications and sequences come from every event, not only the latest one per claim.
 - **Declined:** rewriting commit history to hide identical timestamps. That would be dishonest; this journal already says the AI executed the plan.
 - **QA report:** found that concurrent writes return 500 instead of 409, plus other defects and wording gaps in the criteria. Pending my decision on what to fix.
+
+### 5.4 Acting on the QA report
+- **Fixed in code:**
+  - Concurrent writes now return 409, not 500. The unique-sequence violation is the same lost race as the xmin check.
+  - Oversized input and huge amounts are 400s on the field.
+  - A missing claim type is a 400, not a silent "Motor".
+  - Error keys match the request fields.
+  - Incident dates are checked against each market's local date: markets now carry a time zone.
+- **AI suggested, I agreed:** for the "future date" bug, store an IANA time zone per market rather than loosening the check to "UTC+14 today". Markets stay data, and the rule stays exact.
+- **Doc-only changes:** the criteria now match what was built where they had drifted:
+  - reserve editable only under review or awaiting info
+  - reject from awaiting info
+  - "decided", not "closed"
+  - polling wording
+  - error precedence
+  - "never 5xx"
+  - hand-maintained frontend types
+- **Raised:** DR-8 and M-6 to P0.
+- **Added:**
+  - reconciliation (E-6)
+  - idempotent submit as P2, not built
+  - pagination and duplicate detection as out of scope
+- **Checked at my request:** that the assessment brief never entered git history. It hasn't; the .docx has been gitignored from the first commit, and no committed text quotes it.
