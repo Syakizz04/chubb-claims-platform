@@ -14,7 +14,7 @@ namespace Claims.Tests.Api;
 /// </summary>
 public class ClaimsApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder().WithImage("postgres:17-alpine").Build();
+    private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
