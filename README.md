@@ -176,7 +176,7 @@ The brief puts the backend first, so the depth is there. The frontend covers eve
 
 **Known gaps worth knowing before you probe:**
 - **Dev identity only.** `X-User-Id` picks a seeded user. Claims enforces roles per route, but **the Insights API has no auth yet**, so anyone who can reach it can read the dashboard.
-- **FX rates are seeded separately in Insights.** Adding a seventh market would also need its rate added there.
+- **FX rates are seeded separately in Insights.** A new market without a rate still shows in local currency, flagged "No rate", and is left out of the USD totals until its rate is added.
 - **Kafka topic uses default retention (7 days).** Rebuilding Insights from scratch after that would be incomplete. A compacted topic is the fix.
 - **The UI polls** every 5–30 seconds instead of receiving pushed updates.
 - **Docker path not yet run**, as noted above.

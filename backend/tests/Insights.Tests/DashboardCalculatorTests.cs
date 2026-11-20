@@ -82,6 +82,27 @@ public class DashboardCalculatorTests
         Assert.Equal([2, 2, 2], buckets.Select(b => b.Count));
     }
 
+    [Fact]
+    public void A_market_without_an_fx_rate_is_reported_in_local_currency_and_left_out_of_usd_totals()
+    {
+        // A seventh market added on the Claims side before its rate is seeded in Insights.
+        var claims = new[] { Claim("SG", "SGD", 1_000.00m), Claim("PH", "PHP", 50_000.00m, ageDays: 3) };
+
+        var exposure = DashboardCalculator.Exposure(claims, Rates);
+        var ph = exposure.Markets.Single(m => m.MarketCode == "PH");
+
+        Assert.Equal(50_000.00m, ph.Amount);                  // the liability is still visible
+        Assert.Null(ph.AmountUsd);                            // but not converted with a made-up rate
+        Assert.Equal(770.00m, exposure.TotalUsd);             // SGD only
+        Assert.Equal(["PHP"], exposure.CurrenciesWithoutRate);
+        Assert.Equal("PH", exposure.Markets[^1].MarketCode);  // unrated markets sort last
+        Assert.Equal(2, exposure.OpenClaims);
+
+        // The other panels keep working too.
+        Assert.Equal(770.00m, DashboardCalculator.Workload(claims, Rates, Now).Handlers.Single().ReserveUsd);
+        Assert.Equal(2, DashboardCalculator.Ageing(claims, Rates, Now).Sum(b => b.Count));
+    }
+
     // ------------------------------------------------------------------ properties
 
     private static readonly (string Market, string Currency)[] Markets =
@@ -104,7 +125,7 @@ public class DashboardCalculatorTests
             var r = DashboardCalculator.Exposure(claims, Rates);
             var open = claims.Where(c => c.IsOpen).ToList();
 
-            return r.TotalUsd == r.Markets.Sum(m => m.AmountUsd)
+            return r.TotalUsd == r.Markets.Sum(m => m.AmountUsd ?? 0)
                    && r.OpenClaims == open.Count
                    && r.Markets.Sum(m => m.OpenClaims) == open.Count
                    && r.Markets.All(m => m.Amount == open.Where(c => c.MarketCode == m.MarketCode).Sum(c => c.ReserveAmount))

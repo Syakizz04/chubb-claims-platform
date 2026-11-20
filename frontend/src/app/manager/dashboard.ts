@@ -43,7 +43,7 @@ import { MarketTag } from '../shared/status';
 
             <div class="bar" role="img" [attr.aria-label]="barLabel()">
               @for (m of r.exposure.markets; track m.marketCode) {
-                <span class="seg" [style.flex-grow]="m.amountUsd" [style.background]="'var(--m-' + m.marketCode + ')'"
+                <span class="seg" [style.flex-grow]="m.amountUsd ?? 0" [style.background]="'var(--m-' + m.marketCode + ')'"
                       [title]="api.marketName(m.marketCode) + ': ' + (m.amountUsd | usd)"></span>
               }
             </div>
@@ -59,8 +59,8 @@ import { MarketTag } from '../shared/status';
                     <tr>
                       <td class="nowrap"><app-market [code]="m.marketCode" /> <span class="mname">{{ api.marketName(m.marketCode) }}</span></td>
                       <td class="right num strong">{{ m.amount | money: m.currencyCode }}</td>
-                      <td class="right num muted">{{ m.amountUsd | usd }}</td>
-                      <td class="right num">{{ share(m.amountUsd) | percent: '1.0-0' }}</td>
+                      <td class="right num muted">{{ m.amountUsd === null ? 'No rate' : (m.amountUsd | usd) }}</td>
+                      <td class="right num">{{ m.amountUsd === null ? '—' : (share(m.amountUsd) | percent: '1.0-0') }}</td>
                       <td class="right num">{{ typeAmount(m.byType, 'Motor') ? (typeAmount(m.byType, 'Motor') | money: m.currencyCode) : '—' }}</td>
                       <td class="right num">{{ typeAmount(m.byType, 'Property') ? (typeAmount(m.byType, 'Property') | money: m.currencyCode) : '—' }}</td>
                       <td class="right num">{{ m.openClaims }}</td>
@@ -71,6 +71,12 @@ import { MarketTag } from '../shared/status';
                 </tbody>
               </table>
             </div>
+            @if (r.exposure.currenciesWithoutRate.length) {
+              <div class="notice notice-warning rates" role="status">
+                No FX rate for {{ r.exposure.currenciesWithoutRate.join(', ') }}. Those markets are shown in local currency
+                and are not included in the USD totals.
+              </div>
+            }
             <p class="small muted rates">{{ r.exposure.ratesNote }}</p>
           </div>
         </section>
@@ -193,6 +199,6 @@ export class Dashboard {
     const r = this.report.value();
     if (!r) return '';
     return 'Exposure by market: ' + r.exposure.markets
-      .map(m => `${this.api.marketName(m.marketCode)} ${Math.round(this.share(m.amountUsd) * 100)}%`).join(', ');
+      .map(m => `${this.api.marketName(m.marketCode)} ${m.amountUsd === null ? 'no USD rate' : Math.round(this.share(m.amountUsd) * 100) + '%'}`).join(', ');
   }
 }

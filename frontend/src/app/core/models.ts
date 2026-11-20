@@ -100,13 +100,13 @@ export interface SubmitClaimRequest {
 
 // ---------------------------------------------------------------- insights
 
-export interface TypeExposure { claimType: string; amountUsd: number; openClaims: number; amount?: number; currencyCode?: string; }
+export interface TypeExposure { claimType: string; amountUsd: number | null; openClaims: number; amount?: number; currencyCode?: string; }
 export interface MarketExposure {
-  marketCode: string; currencyCode: string; amount: number; amountUsd: number; openClaims: number; byType: TypeExposure[];
+  marketCode: string; currencyCode: string; amount: number; amountUsd: number | null; openClaims: number; byType: TypeExposure[];
 }
 export interface ExposureReport {
   totalUsd: number; openClaims: number; ratesAsOf: string; ratesNote: string;
-  markets: MarketExposure[]; byType: TypeExposure[];
+  markets: MarketExposure[]; byType: TypeExposure[]; currenciesWithoutRate: string[];
 }
 export interface HandlerWorkload {
   handlerId: string; handlerName: string; openClaims: number; awaitingInfo: number; oldestOpenDays: number | null; reserveUsd: number;

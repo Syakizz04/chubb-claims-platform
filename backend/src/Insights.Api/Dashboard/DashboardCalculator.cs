@@ -12,17 +12,18 @@ public record ExposureReport(
     DateOnly RatesAsOf,
     string RatesNote,
     IReadOnlyList<MarketExposure> Markets,
-    IReadOnlyList<TypeExposure> ByType);
+    IReadOnlyList<TypeExposure> ByType,
+    IReadOnlyList<string> CurrenciesWithoutRate); // markets reported in local currency only, left out of USD totals
 
 public record MarketExposure(
     string MarketCode,
     string CurrencyCode,
     decimal Amount,      // local currency: the real liability
-    decimal AmountUsd,   // indicative
+    decimal? AmountUsd,  // indicative; null when Insights has no FX rate for the currency
     int OpenClaims,
     IReadOnlyList<TypeExposure> ByType);
 
-public record TypeExposure(string ClaimType, decimal AmountUsd, int OpenClaims, decimal? Amount = null, string? CurrencyCode = null);
+public record TypeExposure(string ClaimType, decimal? AmountUsd, int OpenClaims, decimal? Amount = null, string? CurrencyCode = null);
 
 /// <summary>M-3: who is carrying what.</summary>
 public record WorkloadReport(
@@ -65,10 +66,15 @@ public record DashboardReport(
 /// </summary>
 public static class DashboardCalculator
 {
-    public static decimal ToUsd(decimal amount, string currency, IReadOnlyDictionary<string, FxRate> rates) =>
+    /// <summary>
+    /// Indicative USD, or null when there's no rate for the currency. A market added on the Claims
+    /// side before its rate reaches Insights must not take the whole dashboard down. The local-currency
+    /// liability is still reported; it's just left out of the USD totals, and the report says so.
+    /// </summary>
+    public static decimal? ToUsd(decimal amount, string currency, IReadOnlyDictionary<string, FxRate> rates) =>
         rates.TryGetValue(currency, out var r)
             ? decimal.Round(amount * r.UsdPerUnit, 2, MidpointRounding.ToEven)
-            : throw new InvalidOperationException($"No FX rate for {currency}.");
+            : null;
 
     public static ExposureReport Exposure(IReadOnlyCollection<ClaimSnapshot> claims, IReadOnlyDictionary<string, FxRate> rates)
     {
@@ -86,24 +92,25 @@ public static class DashboardCalculator
                 return new MarketExposure(g.Key.MarketCode, g.Key.CurrencyCode, local,
                     ToUsd(local, g.Key.CurrencyCode, rates), g.Count(), byType);
             })
-            .OrderByDescending(m => m.AmountUsd)
+            .OrderByDescending(m => m.AmountUsd ?? -1) // unrated markets last
             .ToList();
 
         var byTypeTotal = markets.SelectMany(m => m.ByType)
             .GroupBy(t => t.ClaimType)
-            .Select(g => new TypeExposure(g.Key, g.Sum(t => t.AmountUsd), g.Sum(t => t.OpenClaims)))
+            .Select(g => new TypeExposure(g.Key, g.Sum(t => t.AmountUsd ?? 0), g.Sum(t => t.OpenClaims)))
             .OrderBy(t => t.ClaimType).ToList();
 
         var asOf = rates.Values.Select(r => r.AsOf).DefaultIfEmpty().Min();
 
         return new ExposureReport(
             // Sum of the per-market USD figures, so the headline always equals the sum of the table rows.
-            markets.Sum(m => m.AmountUsd),
+            markets.Sum(m => m.AmountUsd ?? 0),
             open.Count,
             asOf,
             $"Indicative only. Converted at static rates as of {asOf:yyyy-MM-dd}. The liability is owed in local currency.",
             markets,
-            byTypeTotal);
+            byTypeTotal,
+            markets.Where(m => m.AmountUsd is null).Select(m => m.CurrencyCode).Distinct().Order().ToList());
     }
 
     public static WorkloadReport Workload(IReadOnlyCollection<ClaimSnapshot> claims, IReadOnlyDictionary<string, FxRate> rates, DateTimeOffset now)
@@ -119,7 +126,7 @@ public static class DashboardCalculator
                 g.Count(),
                 g.Count(c => c.Status == "AwaitingInfo"),
                 g.Max(c => AgeDays(c.SubmittedAt, now)),
-                g.Sum(c => ToUsd(c.ReserveAmount, c.CurrencyCode, rates))))
+                g.Sum(c => ToUsd(c.ReserveAmount, c.CurrencyCode, rates) ?? 0)))
             .OrderByDescending(h => h.OpenClaims).ThenBy(h => h.HandlerName)
             .ToList();
 
@@ -136,7 +143,7 @@ public static class DashboardCalculator
         {
             var inBucket = open.Where(x => x.Age >= b.Min && (b.Max is null || x.Age <= b.Max)).ToList();
             return new AgeingBucket(b.Label, b.Min, b.Max, inBucket.Count,
-                inBucket.Sum(x => ToUsd(x.Claim.ReserveAmount, x.Claim.CurrencyCode, rates)));
+                inBucket.Sum(x => ToUsd(x.Claim.ReserveAmount, x.Claim.CurrencyCode, rates) ?? 0));
         }).ToList();
     }
 
