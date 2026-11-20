@@ -21,11 +21,6 @@ import { Session } from '../core/session';
           </button>
         }
       </div>
-
-      <p class="small muted note">
-        Development build: there is no sign-in. Pick a seeded user here or with the switcher in the header.
-        Each request carries that user's id as <code>X-User-Id</code>.
-      </p>
     </div>
   `,
   styles: `
@@ -41,8 +36,6 @@ import { Session } from '../core/session';
     .who { font-weight: 600; font-size: var(--step-1); }
     .what { color: var(--ink-2); }
     .as { margin-top: 0.5rem; }
-    .note { margin-top: 2rem; max-width: 70ch; }
-    code { font-size: 0.85em; background: var(--panel); padding: 0.0625rem 0.25rem; border-radius: var(--radius); }
   `,
 })
 export class Welcome {
