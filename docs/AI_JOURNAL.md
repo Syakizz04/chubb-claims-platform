@@ -167,3 +167,31 @@ A running log of what I asked the AI, what I accepted, what I challenged and wha
 
 ### 4.5 Environment issue: disk full, Docker storage corrupted
 - Mid-build, the Mac's disk filled up (173 MB free) and Docker's image store started returning I/O errors. The AI stopped and asked me to free space rather than deleting anything itself. After I freed space, Docker's store stayed corrupted and needed a purge, which is my call because it removes every Docker image on the machine. Frontend work carried on in the meantime because it doesn't need Docker.
+
+## Session 5: Verification and independent review (Claude Code)
+
+### 5.1 Homebrew instead of Docker for verification
+- **Context:** Docker stayed broken, and purging it would delete every image on my machine. I asked whether the brief requires Docker. It doesn't: it asks for an app that starts locally.
+- **Decision (mine):** run Postgres 17 and Kafka natively with Homebrew. The Docker setup stays in the repo, labelled "not yet run". The README leads with the verified native route.
+- **Consequence:** the Testcontainers integration tests can't run until Docker is fixed. Unit and property tests still run.
+
+### 5.2 End-to-end browser test found layout bugs the unit tests couldn't
+- The AI drove the README's two-minute tour in headless Chrome against the real stack: zero console errors, and the claimant never sees the reserve.
+- **Screenshots exposed:**
+  - every page scrolling sideways at phone width
+  - amounts wrapping onto two lines
+  - the header nav cut off on phones
+  - a stretched toggle
+- All fixed and rechecked at 390px.
+
+### 5.3 Two independent reviewers (subagents)
+- I asked for two subagents with full context and no permission to edit: one to critique the stack, one to test the running app against the acceptance criteria.
+- **Stack critique, accepted and fixed:**
+  - The Insights API had no auth: a claimant could read the dashboard by calling it directly.
+  - A market without an FX rate made the whole dashboard return 500.
+  - Kafka's default 7-day retention would make a later rebuild of Insights incomplete.
+  - The Postgres healthcheck could pass before the `insights` database existed.
+- **Challenged:** for Insights auth, the obvious fix was to look the user up in Claims. Rejected, because it couples the services: a Claims outage would lock managers out of the dashboard. Insights instead trusts a role claim (`X-User-Role`), as it would trust a signed JWT. In dev that header is unsigned, exactly as spoofable as `X-User-Id` already is.
+- **Challenged:** for retention, compaction vs infinite. Chose infinite, because notifications and sequences come from every event, not only the latest one per claim.
+- **Declined:** rewriting commit history to hide identical timestamps. That would be dishonest; this journal already says the AI executed the plan.
+- **QA report:** found that concurrent writes return 500 instead of 409, plus other defects and wording gaps in the criteria. Pending my decision on what to fix.
