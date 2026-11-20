@@ -1,0 +1,19 @@
+# Assessment brief (company document, not part of the submission)
+*.docx
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
